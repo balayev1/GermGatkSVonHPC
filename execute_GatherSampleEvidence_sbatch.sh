@@ -4,10 +4,12 @@
 ################# Tab-/comma-delimited file should have the following columns: Sample_ID, Path/to/normal.bam, Path/to/normal.bam.bai
 
 ## REQUIRED INPUTS (Change these paths as needed)
-export MANIFEST="/projects/standard/venteicher_30050/balay011/gatk-sv/chordbai_gatksv.tsv"
-export OUTDIR="/scratch.global/balay011/GermlineSV_outs"
-export GATK_SV_DIR="/scratch.global/balay011/GermGatkSVonHPC"
+export MANIFEST="/projects/standard/venteicher_30050/balay011/gatk-sv/chordbai_gatksv.tsv" # <- adjust
+export OUTDIR="/scratch.global/balay011/GermlineSV_outs" # <- adjust
+export GATK_SV_DIR="/scratch.global/balay011/GermGatkSVonHPC" # <- adjust
 export CROMWELL_CONF="$GATK_SV_DIR/cromwell.conf"
+export CROMWELL_EXE_JAR="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell-91.jar" # <- adjust
+export DEPS_ZIP="$GATK_SV_DIR/deps.zip" # <- adjust
 
 # Check required variables
 if [[ -z "$MANIFEST" || -z "$OUTDIR" || -z "$GATK_SV_DIR" ]]; then
@@ -18,9 +20,6 @@ fi
 # ---------------- GatherSampleEvidence ----------------
 ## Module parameters
 export JSON_GATHERSAMPLEEVIDENCE_TEMPLATE="$GATK_SV_DIR/data/GatherSampleEvidence_inputs.json"
-export GATHERSAMPLEEVIDENCE_WDL_PATH="/projects/standard/venteicher_30050/balay011/gatk-sv/wdl/GatherSampleEvidence.wdl"
-export CROMWELL_EXE_JAR="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell-91.jar"
-export DEPS_ZIP="/projects/standard/venteicher_30050/balay011/gatk-sv/deps.zip"
 
 ### Output directory
 mkdir -p ${OUTDIR}/GatherSampleEvidence_out/{results,logs}
