@@ -50,8 +50,8 @@ while IFS=$'\t' read -r SAMPLE_ID BAM_PATH BAI_PATH; do
     # Submit the Master Cromwell Job to Slurm
     sbatch \
       --job-name="GSE_master_$SAMPLE_ID" \
-      --output="${OUTDIR}/logs/${SAMPLE_ID}_gse_master.out" \
-      --error="${OUTDIR}/logs/${SAMPLE_ID}_gse_master.err" \
+      --output="${OUTDIR}/GatherSampleEvidence_out/logs/${SAMPLE_ID}_gse_master.out" \
+      --error="${OUTDIR}/GatherSampleEvidence_out/logs/${SAMPLE_ID}_gse_master.err" \
       --account=aventeic \
       --partition=asvnode1,msibigmem \
       --time=24:00:00 \
