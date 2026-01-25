@@ -4,9 +4,9 @@
 ################# Tab-/comma-delimited file should have the following columns: Sample_ID, Path/to/normal.bam, Path/to/normal.bam.bai
 
 ## REQUIRED INPUTS (Change these paths as needed)
-export MANIFEST="/path/to/manifest.tsv"
-export OUTDIR="path/to/output"
-export GATK_SV_DIR="/projects/standard/venteicher_30050/balay011/Execute_Germline_GATKSV_on_HPC"
+export MANIFEST="/projects/standard/venteicher_30050/balay011/gatk-sv/chordbai_gatksv.tsv"
+export OUTDIR="/scratch.global/balay011/GermlineSV_outs"
+export GATK_SV_DIR="/scratch.global/balay011/GermGatkSVonHPC"
 export CROMWELL_CONF="$GATK_SV_DIR/cromwell.conf"
 
 # Check required variables
@@ -57,8 +57,8 @@ while IFS=$'\t' read -r SAMPLE_ID BAM_PATH BAI_PATH; do
       --time=24:00:00 \
       --cpus-per-task=4 \
       --mem=16G \
-      --wrap "cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP"
+      --wrap "module load java/openjdk-17.0.2 && cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP"
 
     echo "Submitted pipeline for sample: $SAMPLE_ID"
 
-done < "$SAMPLES_FILE"
+done < "$MANIFEST"
