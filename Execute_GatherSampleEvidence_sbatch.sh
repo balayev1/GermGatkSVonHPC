@@ -1,0 +1,64 @@
+#!/bin/bash
+
+################# This script takes tab-/comma-delimited file with sample information, and executes GATK-SV pipeline
+################# Tab-/comma-delimited file should have the following columns: Sample_ID, Path/to/normal.bam, Path/to/normal.bam.bai
+
+## REQUIRED INPUTS (Change these paths as needed)
+export MANIFEST="/path/to/manifest.tsv"
+export OUTDIR="path/to/output"
+export GATK_SV_DIR="/projects/standard/venteicher_30050/balay011/Execute_Germline_GATKSV_on_HPC"
+export CROMWELL_CONF="$GATK_SV_DIR/cromwell.conf"
+
+# Check required variables
+if [[ -z "$MANIFEST" || -z "$OUTDIR" || -z "$GATK_SV_DIR" ]]; then
+    echo "Error: Missing required environment variables."
+    exit 1
+fi
+
+# ---------------- GatherSampleEvidence ----------------
+## Module parameters
+export JSON_GATHERSAMPLEEVIDENCE_TEMPLATE="$GATK_SV_DIR/data/GatherSampleEvidence_inputs.json"
+export GATHERSAMPLEEVIDENCE_WDL_PATH="/projects/standard/venteicher_30050/balay011/gatk-sv/wdl/GatherSampleEvidence.wdl"
+export CROMWELL_EXE_JAR="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell-91.jar"
+export DEPS_ZIP="/projects/standard/venteicher_30050/balay011/gatk-sv/deps.zip"
+
+### Output directory
+mkdir -p ${OUTDIR}/GatherSampleEvidence_out/{results,logs}
+
+while IFS=$'\t' read -r SAMPLE_ID BAM_PATH BAI_PATH; do
+
+    # Check if sample ID is valid
+    [[ -z "$SAMPLE_ID" || "$SAMPLE_ID" == \#* ]] && continue
+
+    # Check if BAM and index files exist
+    if [[ ! -f "$BAM_PATH" || ! -f "$BAI_PATH" ]]; then
+        echo "Error: Missing BAM/BAI for $SAMPLE_ID. Skipping..."
+        continue
+    fi
+
+    # Sample-level output directory
+    GSE_RESULTS_DIR="${OUTDIR}/GatherSampleEvidence_out/results"
+    SAMPLE_WORK_DIR="$GSE_RESULTS_DIR/$SAMPLE_ID"
+    mkdir -p "$SAMPLE_WORK_DIR"
+
+    # Generate Sample-Specific JSON from Template
+    sed -e "s|PLACEHOLDER_ID|$SAMPLE_ID|g" \
+        -e "s|PLACEHOLDER_BAM|$BAM_PATH|g" \
+        -e "s|PLACEHOLDER_BAI|$BAI_PATH|g" \
+        "$JSON_GATHERSAMPLEEVIDENCE_TEMPLATE" > "$SAMPLE_WORK_DIR/${SAMPLE_ID}_inputs.json"
+
+    # Submit the Master Cromwell Job to Slurm
+    sbatch \
+      --job-name="GSE_master_$SAMPLE_ID" \
+      --output="${OUTDIR}/logs/${SAMPLE_ID}_gse_master.out" \
+      --error="${OUTDIR}/logs/${SAMPLE_ID}_gse_master.err" \
+      --account=aventeic \
+      --partition=asvnode1,msibigmem \
+      --time=24:00:00 \
+      --cpus-per-task=4 \
+      --mem=16G \
+      --wrap "cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP"
+
+    echo "Submitted pipeline for sample: $SAMPLE_ID"
+
+done < "$SAMPLES_FILE"
