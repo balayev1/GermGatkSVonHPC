@@ -26,7 +26,10 @@ fi
 ## Module parameters
 export JSON_EVIDENCEQC_TEMPLATE="$GATK_SV_DIR/data/EvidenceQC_inputs.json"
 export GATHERSAMPLEEVIDENCE_OUTDIR="$OUTDIR/GatherSampleEvidence_out/results"
+
+### Output directory
 export EVIDENCEQC_OUTDIR="$OUTDIR/EvidenceQC_out"
+mkdir -p ${EVIDENCEQC_OUTDIR}/{results,logs}
 
 SAMPLES=""
 COUNTS=""
@@ -60,19 +63,18 @@ SCRAMBLE=${SCRAMBLE%, }
 
 ## Replace placeholders in JSON template by adding arrays for samples, counts and if found, Manta, Wham and Scramble VCFs
 echo "Setting up EvidenceQC JSON input file..."
-sed -i "/\"SAMPLE_ID1\"/,/\"SAMPLE_ID2\"/c\  $SAMPLES" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.counts.tsv.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.counts.tsv.gz\"/c\  $COUNTS" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.manta.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.manta.std.vcf.gz\"/c\ $MANTA" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.wham.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.wham.std.vcf.gz\"/c\ $WHAM" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.scramble.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.scramble.vcf.gz\"/c\ $SCRAMBLE" "$JSON_EVIDENCEQC_TEMPLATE"
-echo "Setup complete: $JSON_EVIDENCEQC_TEMPLATE"
+JSON_EVIDENCEQC_INPUT="$EVIDENCEQC_OUTDIR/results/EvidenceQC_inputs_run.json"
+cp "$JSON_EVIDENCEQC_TEMPLATE" "$JSON_EVIDENCEQC_INPUT"
+
+sed -i "/\"SAMPLE_ID1\"/,/\"SAMPLE_ID2\"/c\  $SAMPLES" "$JSON_EVIDENCEQC_INPUT"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.counts.tsv.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.counts.tsv.gz\"/c\  $COUNTS" "$JSON_EVIDENCEQC_INPUT"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.manta.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.manta.std.vcf.gz\"/c\ $MANTA" "$JSON_EVIDENCEQC_INPUT"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.wham.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.wham.std.vcf.gz\"/c\ $WHAM" "$JSON_EVIDENCEQC_INPUT"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.scramble.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.scramble.vcf.gz\"/c\ $SCRAMBLE" "$JSON_EVIDENCEQC_INPUT"
+echo "Setup complete: $JSON_EVIDENCEQC_INPUT"
 
 ## Verify JSON file
-python3 -c "import json; json.load(open('$JSON_EVIDENCEQC_TEMPLATE'))" && echo "JSON is valid" || exit 1
-
-## Create output directories
-mkdir -p "$EVIDENCEQC_OUTDIR/results"
-mkdir -p "$EVIDENCEQC_OUTDIR/logs"
+python3 -c "import json; json.load(open('$JSON_EVIDENCEQC_INPUT'))" && echo "JSON is valid" || exit 1
 
 sbatch \
   --job-name="EvidenceQC_Cohort" \
@@ -85,6 +87,6 @@ sbatch \
   --mem=64G \
   --mail-type=END,FAIL \
   --mail-user=balay011@umn.edu \
-  --wrap "module load java/openjdk-17.0.2 && cd $EVIDENCEQC_OUTDIR/results && java -Xmx48G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $EVIDENCEQC_WDL_PATH -i $JSON_EVIDENCEQC_TEMPLATE -p $DEPS_ZIP"
+  --wrap "module load java/openjdk-17.0.2 && cd $EVIDENCEQC_OUTDIR/results && java -Xmx48G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $EVIDENCEQC_WDL_PATH -i $JSON_EVIDENCEQC_INPUT -p $DEPS_ZIP"
 
 echo "Cohort EvidenceQC submitted."
