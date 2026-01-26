@@ -10,6 +10,7 @@ export GATK_SV_DIR="/scratch.global/balay011/GermGatkSVonHPC" # <- adjust
 export CROMWELL_CONF="$GATK_SV_DIR/cromwell.conf"
 export CROMWELL_EXE_JAR="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell-91.jar" # <- adjust
 export DEPS_ZIP="$GATK_SV_DIR/deps.zip" # <- adjust
+export GATHERSAMPLEEVIDENCE_WDL_PATH="/projects/standard/venteicher_30050/balay011/gatk-sv/wdl/GatherSampleEvidence.wdl" # <- adjust
 
 # Check required variables
 if [[ -z "$MANIFEST" || -z "$OUTDIR" || -z "$GATK_SV_DIR" ]]; then
@@ -58,7 +59,7 @@ while IFS=$'\t' read -r SAMPLE_ID BAM_PATH BAI_PATH; do
       --mem=16G \
       --mail-type=END,FAIL \
       --mail-user=balay011@umn.edu \
-      --wrap "module load java/openjdk-17.0.2 && cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP"
+      --wrap "module load java/openjdk-17.0.2 && cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP && find . -type d -name 'tmpVcfs' -exec rm -rf {} +"
 
     echo "Submitted pipeline for sample: $SAMPLE_ID"
 
