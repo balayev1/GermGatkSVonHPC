@@ -25,7 +25,7 @@ fi
 # ---------------- EvidenceQC ----------------
 ## Module parameters
 export JSON_EVIDENCEQC_TEMPLATE="$GATK_SV_DIR/data/EvidenceQC_inputs.json"
-export GATHERSAMPLEEVIDENCE_OUTDIR="$OUTDIR/GatherSampleEvidence_out"
+export GATHERSAMPLEEVIDENCE_OUTDIR="$OUTDIR/GatherSampleEvidence_out/results"
 export EVIDENCEQC_OUTDIR="$OUTDIR/EvidenceQC_out"
 
 SAMPLES=""
@@ -59,12 +59,13 @@ WHAM=${WHAM%, }
 SCRAMBLE=${SCRAMBLE%, }
 
 ## Replace placeholders in JSON template by adding arrays for samples, counts and if found, Manta, Wham and Scramble VCFs
+echo "Setting up EvidenceQC JSON input file..."
 sed -i "/\"SAMPLE_ID1\"/,/\"SAMPLE_ID2\"/c\  $SAMPLES" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.counts.tsv.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.counts.tsv.gz\"/c\    $COUNTS" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.manta.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.manta.std.vcf.gz\"/c\    $MANTA" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.wham.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.wham.std.vcf.gz\"/c\    $WHAM" "$JSON_EVIDENCEQC_TEMPLATE"
-sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.scramble.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.scramble.vcf.gz\"/c\    $SCRAMBLE" "$JSON_EVIDENCEQC_TEMPLATE"
-echo "Replacement complete: $JSON_EVIDENCEQC_TEMPLATE"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.counts.tsv.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.counts.tsv.gz\"/c\  $COUNTS" "$JSON_EVIDENCEQC_TEMPLATE"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.manta.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.manta.std.vcf.gz\"/c\ $MANTA" "$JSON_EVIDENCEQC_TEMPLATE"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.wham.std.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.wham.std.vcf.gz\"/c\ $WHAM" "$JSON_EVIDENCEQC_TEMPLATE"
+sed -i "/\"\/path\/to\/results\/SAMPLE_ID1\/SAMPLE_ID1.scramble.vcf.gz\"/,/\"\/path\/to\/results\/SAMPLE_ID2\/SAMPLE_ID2.scramble.vcf.gz\"/c\ $SCRAMBLE" "$JSON_EVIDENCEQC_TEMPLATE"
+echo "Setup complete: $JSON_EVIDENCEQC_TEMPLATE"
 
 ## Verify JSON file
 python3 -c "import json; json.load(open('$JSON_EVIDENCEQC_TEMPLATE'))" && echo "JSON is valid" || exit 1
