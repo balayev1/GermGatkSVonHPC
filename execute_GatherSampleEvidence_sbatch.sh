@@ -1,6 +1,6 @@
 #!/bin/bash
 
-################# This script takes tab-/comma-delimited file with sample information, and executes GATK-SV pipeline
+################# This script takes tab-/comma-delimited file with sample information, and executes GatherSampleEvidence module in GATK-SV pipeline
 ################# Tab-/comma-delimited file should have the following columns: Sample_ID, Path/to/normal.bam, Path/to/normal.bam.bai
 
 ## REQUIRED INPUTS (Change these paths as needed)
