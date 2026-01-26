@@ -53,9 +53,11 @@ while IFS=$'\t' read -r SAMPLE_ID BAM_PATH BAI_PATH; do
       --error="${OUTDIR}/GatherSampleEvidence_out/logs/${SAMPLE_ID}_gse_master.err" \
       --account=aventeic \
       --partition=asvnode1,msibigmem \
-      --time=24:00:00 \
+      --time=48:00:00 \
       --cpus-per-task=4 \
       --mem=16G \
+      --mail-type=END,FAIL \
+      --mail-user=balay011@umn.edu \
       --wrap "module load java/openjdk-17.0.2 && cd $SAMPLE_WORK_DIR && java -Xmx12G -Dconfig.file=$CROMWELL_CONF -jar $CROMWELL_EXE_JAR run $GATHERSAMPLEEVIDENCE_WDL_PATH -i ${SAMPLE_ID}_inputs.json -p $DEPS_ZIP"
 
     echo "Submitted pipeline for sample: $SAMPLE_ID"
