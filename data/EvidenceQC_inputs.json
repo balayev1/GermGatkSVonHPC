@@ -1,0 +1,46 @@
+{
+  "EvidenceQC.batch": "Batch_Name",
+  "EvidenceQC.samples": [
+    "SAMPLE_ID1",
+    "SAMPLE_ID2"
+  ],
+  "EvidenceQC.run_vcf_qc": true,
+  "EvidenceQC.run_ploidy": true,
+
+  "EvidenceQC.genome_file": "/projects/standard/aventeic/balay011/references/GATK_SV_files/hg38.genome",
+  "EvidenceQC.wgd_scoring_mask": "/projects/standard/aventeic/balay011/references/GATK_SV_files/wgd_scoring_mask.hg38.gnomad_v3.bed",
+  
+  "EvidenceQC.counts": [
+    "/path/to/results/SAMPLE_ID1/SAMPLE_ID1.counts.tsv.gz",
+    "/path/to/results/SAMPLE_ID2/SAMPLE_ID2.counts.tsv.gz"
+  ],
+
+  "EvidenceQC.manta_vcfs": [
+    "/path/to/results/SAMPLE_ID1/SAMPLE_ID1.manta.std.vcf.gz",
+    "/path/to/results/SAMPLE_ID2/SAMPLE_ID2.manta.std.vcf.gz"
+  ],
+
+  "EvidenceQC.wham_vcfs": [
+    "/path/to/results/SAMPLE_ID1/SAMPLE_ID1.wham.std.vcf.gz",
+    "/path/to/results/SAMPLE_ID2/SAMPLE_ID2.wham.std.vcf.gz"
+  ],
+
+  "EvidenceQC.scramble_vcfs": [
+    "/path/to/results/SAMPLE_ID1/SAMPLE_ID1.scramble.vcf.gz",
+    "/path/to/results/SAMPLE_ID2/SAMPLE_ID2.scramble.vcf.gz"
+  ],
+
+  "EvidenceQC.sv_base_mini_docker": "us.gcr.io/broad-dsde-methods/gatk-sv/sv-base-mini:2024-10-25-v0.29-beta-5ea22a52",
+  "EvidenceQC.sv_base_docker": "us.gcr.io/broad-dsde-methods/gatk-sv/sv-base:2024-10-25-v0.29-beta-5ea22a52",
+  "EvidenceQC.sv_pipeline_docker": "us.gcr.io/broad-dsde-methods/gatk-sv/sv-pipeline:2025-12-18-v1.1-5b84101e",
+  "EvidenceQC.sv_pipeline_qc_docker": "us.gcr.io/broad-dsde-methods/gatk-sv/sv-pipeline:2025-12-18-v1.1-5b84101e",
+
+  "EvidenceQC.median_cov_mem_gb_per_sample": 0.5,
+  "EvidenceQC.disk_overhead_bincov_gb": 50,
+
+  "EvidenceQC.runtime_attr_mediancov": {
+    "cpu_cores": 2,
+    "mem_gb": 16,
+    "disk_gb": 100
+  }
+}
