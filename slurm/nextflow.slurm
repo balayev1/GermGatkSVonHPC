@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=GATK_SV_Master
-#SBATCH --output=logs/nextflow_%j.log
-#SBATCH --error=logs/nextflow_%j.err
+#SBATCH --output=logs/nf_gatksv_%j.log
+#SBATCH --error=logs/nf_gatksv_%j.err
 #SBATCH --partition=asvnode1,msibigmem
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
