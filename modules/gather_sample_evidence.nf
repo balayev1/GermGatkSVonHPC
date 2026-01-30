@@ -19,18 +19,17 @@ process GATHER_SAMPLE_EVIDENCE {
     // tuple val(meta), path("*.scramble.vcf.gz"), emit: scramble_vcf
 
     script:
-    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
 
-    """    
+    """
     mkdir -p ${prefix}
 
     # Create sample JSON
     sed -e "s|PLACEHOLDER_ID|${prefix}|g" \
-        -e "s|PLACEHOLDER_BAM|${bam.toAbsolutePath()}|g" \
-        -e "s|PLACEHOLDER_BAI|${bai.toAbsolutePath()}|g" \
+        -e "s|PLACEHOLDER_BAM|${bam.toRealPath()}|g" \
+        -e "s|PLACEHOLDER_BAI|${bai.toRealPath()}|g" \
         ${params.gse_template} > ${prefix}_inputs.json
-    
+
     # Run GSE using Cromwell
     java -Xmx12G -Dconfig.file=${params.cromwell_conf} -jar ${params.cromwell_jar} \
         run ${params.gse_wdl} \

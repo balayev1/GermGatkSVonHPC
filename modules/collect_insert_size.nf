@@ -1,7 +1,9 @@
+
 process COLLECT_INSERT_SIZE {
     tag "${meta.id}"
 
-    container: 'docker://broadinstitute/picard:latest'
+    container 'docker://broadinstitute/picard:latest'
+
     input:
     tuple val(meta), path(bam), path(bai)
 
@@ -13,18 +15,18 @@ process COLLECT_INSERT_SIZE {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+    def args = task.ext.args ?: [:]
     def prefix = task.ext.prefix ?: "${meta.id}"
 
-    def min_pct_args = args.min_pct ? "${args.min_pct}" : "0.05"
-    def ref_genome_args = args.ref_genome ? "${args.ref_genome}" : "null"
+    def min_pct = args.min_pct ?: "0.05"
+    def ref_arg = args.ref_genome ? "R=${args.ref_genome}" : ""
 
-    """    
-    picard CollectInsertSizeMetrics \\
+    """
+    java -Xmx6G -jar /usr/picard/picard.jar CollectInsertSizeMetrics \\
         I=${bam} \\
-        O=${meta.id}.insert_size_metrics.txt \\
-        H=${meta.id}.insert_size_histogram.pdf \\
-        M=${min_pct_args} \\
-        R=${ref_genome_args}
+        O=${prefix}.insert_size_metrics.txt \\
+        H=${prefix}.insert_size_histogram.pdf \\
+        M=${min_pct} \\
+        ${ref_arg}
     """
 }
