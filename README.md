@@ -9,7 +9,7 @@ You will need following modules in your environment:
 * **Nextflow** (>= 25.10.2)
 * **Java** (OpenJDK 17.0.2+)
 * **Singularity / Apptainer**
-* **Cromwell JAR** (v91+) — [Download via GitHub](https://github.com/broadinstitute/cromwell/releases)
+* **Cromwell JAR** (>= v91) — [Download via GitHub](https://github.com/broadinstitute/cromwell/releases)
 
 ---
 
@@ -49,7 +49,7 @@ The pipeline is organized into three sequential modules. Each requires specific 
 
 ### 2. Module: GatherSampleEvidence
 * **JSON Template:** Edit `data/GatherSampleEvidence_inputs.json`. 
-    * Update paths for required resources (reference genome, contig list and et.c.). To find some of resources, see [link] (https://github.com/broadinstitute/gatk-sv/blob/main/inputs/values/resources_hg38.json)
+    * Update paths for required resources (reference genome, contig list and et.c.). To find some of resources, see [link](https://github.com/broadinstitute/gatk-sv/blob/main/inputs/values/resources_hg38.json)
     * **Note:** Leave `sample_id`, `bam_or_cram_file`, and `bam_or_cram_index` empty; the pipeline injects these per sample.
 * **Nextflow Config:** Adjust `GATHER_SAMPLE_EVIDENCE` block parameters.
 
