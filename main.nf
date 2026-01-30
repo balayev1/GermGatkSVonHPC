@@ -22,14 +22,14 @@ workflow {
 
             return [ meta, bam, bai ] }
 
-    // 2. Step 0: Picard (Parallel)
+    // 2. Run Picard CollectInsertSizeMetrics
     // This will save files to /scratch.global/balay011/GermlineSV_outs/CollectInsertSizeMetrics
     picard_results = COLLECT_INSERT_SIZE(samples_ch)
 
-    // 2. Run Step 1 (Parallel per sample)
+    // 3. Run GatherSampleEvidence
     gse_results = GATHER_SAMPLE_EVIDENCE(samples_ch)
 
-    // 3. Run Step 2 (Jointly for all samples)
-    // .collect() waits for all Step 1 tasks to finish
+    // 4. Run EvidenceQC (Jointly for all samples)
+    // .collect() waits for all Step 3 tasks to finish
     EVIDENCE_QC(gse_results.full_evidence_dir.map{ it[1] }.collect())
 }

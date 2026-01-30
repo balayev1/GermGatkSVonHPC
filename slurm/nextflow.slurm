@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=GATK_SV_Master
-#SBATCH --output=logs/nf_gatksv_%j.log
+#SBATCH --output=logs/nf_gatksv_%j.out
 #SBATCH --error=logs/nf_gatksv_%j.err
 #SBATCH --partition=asvnode1,msibigmem
 #SBATCH --cpus-per-task=1
