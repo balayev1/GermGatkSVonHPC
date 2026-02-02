@@ -36,7 +36,8 @@ process GATHER_SAMPLE_EVIDENCE {
         -i ${prefix}_inputs.json \
         -p ${params.deps_zip}
 
-    # Move results to the specific output folder
-    mv cromwell-executions/GatherSampleEvidence/*/call-* ${prefix}/ && find ${prefix}/ -type d -name 'tmpVcfs' -exec rm -rf {} +
+    # Move results into the output directory
+    mv cromwell-executions/GatherSampleEvidence/*/call-* ${prefix}/
+    find ${prefix}/ -type d -name 'tmpVcfs' -exec rm -rf {} +
     """
 }

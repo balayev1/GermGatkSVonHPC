@@ -1,11 +1,11 @@
 process EVIDENCE_QC {
+
     input:
     val sample_list
-    // This tells Nextflow to collect all folders into a local directory called 'all_samples'
     path "all_samples/*" 
 
     output:
-    path "qc_results/*", emit: qc_results
+    path "evidence_qc_results/*", emit: evidence_qc_results
 
     script:
     def template_path = file(params.evidqc_template ?: "${params.gatk_sv_dir}/data/EvidenceQC_inputs.json").toAbsolutePath()
@@ -22,7 +22,6 @@ process EVIDENCE_QC {
 
     samples, counts, manta, wham, scramble = [], [], [], [], []
 
-    # CHANGE 2: Point the search_base to the local staged folder
     search_base = "all_samples"
 
     for sample_id in ${sample_list.inspect()}:
@@ -68,8 +67,7 @@ process EVIDENCE_QC {
         -i evidence_qc_inputs.json \
         -p ${params.deps_zip}
 
-    mkdir -p qc_results
-    # Using find to avoid 'argument list too long' errors
-    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -maxdepth 2 -exec mv -t qc_results/ {} +
+    mkdir -p evidence_qc_results
+    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -maxdepth 2 -exec mv -t evidence_qc_results/ {} +
     """
 }
