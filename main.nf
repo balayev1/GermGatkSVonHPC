@@ -29,9 +29,10 @@ workflow {
     gse_results = GATHER_SAMPLE_EVIDENCE(samples_ch)
 
     // 4. Run EvidenceQC (Jointly for all samples)
-    // Collect all sample IDs
+    // Collect all sample IDs and folders
     sample_ids = gse_results.full_evidence_dir.map{ it[0].id }.collect()
+    evidence_folders = gse_results.full_evidence_dir.map{ it[1] }.collect()
 
     // Execute Evidence QC
-    EVIDENCE_QC(sample_ids, params.outdir + "/GatherSampleEvidence_out/results")
+    EVIDENCE_QC(sample_ids, evidence_folders)
 }

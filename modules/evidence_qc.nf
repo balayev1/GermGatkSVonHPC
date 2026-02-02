@@ -1,55 +1,42 @@
-#!/usr/bin/env nextflow
-
-nextflow.enable.dsl=2
-
 process EVIDENCE_QC {
-
     input:
     val sample_list
-    path publish_dir_base
+    // This tells Nextflow to collect all folders into a local directory called 'all_samples'
+    path "all_samples/*" 
 
     output:
-    path "results/*", emit: qc_results
+    path "qc_results/*", emit: qc_results
 
     script:
-
     def template_path = file(params.evidqc_template ?: "${params.gatk_sv_dir}/data/EvidenceQC_inputs.json").toAbsolutePath()
     
     """
-    # Use Python to load the template and inject dynamic file lists
     python3 - <<EOF
     import json
     import os
     import glob
+    import sys
 
-    # Load the static JSON template
     with open("${template_path}", 'r') as f:
         data = json.load(f)
 
-    samples = []
-    counts = []
-    manta = []
-    wham = []
-    scramble = []
+    samples, counts, manta, wham, scramble = [], [], [], [], []
+
+    # CHANGE 2: Point the search_base to the local staged folder
+    search_base = "all_samples"
 
     for sample_id in ${sample_list.inspect()}:
-        # Construct the path to the published directory
-        sample_path = os.path.join("${publish_dir_base}", sample_id)
+        sample_path = os.path.join(search_base, sample_id)
         
         if not os.path.exists(sample_path):
-            print(f"WARNING: Published directory for {sample_id} not found at {sample_path}")
-            continue
+             continue
 
         def find_file(pattern, sub_string):
-            # Search in the published results folder
             found = glob.glob(f"{sample_path}/**/{pattern}", recursive=True)
             filtered = [f for f in found if sub_string in f]
-            if filtered:
-                return os.path.realpath(filtered[0]) 
-            return None
+            return os.path.realpath(filtered[0]) if filtered else None
 
-        # Gather files from the Outdir
-        c_file = find_file("*.counts.tsv.gz", "call-CountsMetrics")
+        c_file = find_file("*.counts.tsv.gz", "call-CollectCounts")
         m_file = find_file("*.manta.std.vcf.gz", "execution")
         w_file = find_file("*.wham.std.vcf.gz", "execution")
         s_file = find_file("*.scramble.vcf.gz", "execution")
@@ -60,8 +47,10 @@ process EVIDENCE_QC {
             manta.append(m_file)
             wham.append(w_file)
             scramble.append(s_file)
-        else:
-            print(f"SKIPPING: {sample_id} - One or more files missing in {sample_path}")
+
+    if not samples:
+        print("ERROR: Zero samples found in staged directory!")
+        sys.exit(1)
 
     data["EvidenceQC.samples"] = samples
     data["EvidenceQC.counts"] = counts
@@ -79,7 +68,8 @@ process EVIDENCE_QC {
         -i evidence_qc_inputs.json \
         -p ${params.deps_zip}
 
-    mkdir -p results
-    mv cromwell-executions/EvidenceQC/*/call-* results/
+    mkdir -p qc_results
+    # Using find to avoid 'argument list too long' errors
+    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -maxdepth 2 -exec mv -t qc_results/ {} +
     """
 }
