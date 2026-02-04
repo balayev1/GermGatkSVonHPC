@@ -34,5 +34,17 @@ workflow {
     evidence_folders = gse_results.full_evidence_dir.map{ it[1] }.collect()
 
     // Execute Evidence QC
-    EVIDENCE_QC(sample_ids, evidence_folders)
+    evidence_qc_results = EVIDENCE_QC(sample_ids, evidence_folders)
+
+    // 5. Run Sample QC (Jointly for all samples)
+    // Get the manifest metadata file
+    meta_file = gse_results.full_evidence_dir
+        .map { meta, path -> "${meta.id}\t${meta.gender}" }
+        .collectFile(name: 'sample_metadata.tsv', newLine: true)
+
+    // Count the number of samples from the manifest channel
+    num_samples_ch = samples_ch.count()
+
+    // Execute Sample QC 
+    SAMPLE_QC(meta_file, workflow.workDir, num_samples_ch, picard_results, evidence_qc_results)
 }

@@ -16,6 +16,7 @@ mkdir -p logs
 module load nextflow
 module load java/openjdk-17.0.2
 module load singularity
+module load R
 
 # Singularity cachedir
 export NXF_SINGULARITY_CACHEDIR="/scratch.global/balay011/singularity_cache"

@@ -1,3 +1,6 @@
+#!/usr/bin/env nextflow
+
+nextflow.enable.dsl=2
 
 process COLLECT_INSERT_SIZE {
     tag "${meta.id}"
