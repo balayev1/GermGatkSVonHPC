@@ -21,7 +21,7 @@ nf_work_dir <- args[2]
 num_samples  <- as.numeric(args[3])
 
 ## Set output directory
-outdir <- file.path(nf_work_dir, "Sample_QC_out")
+outdir <- "Sample_QC_out" 
 if (!dir.exists(outdir)) {
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 }
