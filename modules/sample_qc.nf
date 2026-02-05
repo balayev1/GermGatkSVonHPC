@@ -11,13 +11,18 @@ process SAMPLE_QC {
     path metadata_tsv
     val num_samples
     path "insert_size_files/*"
-    path evid_qc_results
+    path "evid_qc_results"
 
     output:
-    path "Sample_QC_out/*", emit: sample_qc_results
+    path "*.pdf", emit: sample_qc_plots
+    path "*.tsv", emit: sample_qc_reports
 
     script:
     """
-    Rscript ${baseDir}/R/Sample_QC.R ${metadata_tsv} ${num_samples}
+    Rscript ${baseDir}/R/Sample_QC.R \\
+        ${metadata_tsv} \\
+        "evid_qc_results" \\
+        "insert_size_files" \\
+        ${num_samples}
     """
 }
