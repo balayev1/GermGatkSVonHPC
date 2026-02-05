@@ -23,27 +23,29 @@ suppressPackageStartupMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 metadata_path <- args[1]
-num_samples  <- as.numeric(args[2])
+evidence_qc_results <- args[2]
+insert_size_results <- args[3]
+num_samples  <- as.numeric(args[4])
 
 ## Set output directory
-outdir <- "Sample_QC_out" 
+outdir <- "." 
 if (!dir.exists(outdir)) {
     dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 }
 
 ## Load input QC data
-evid_qc_path <- list.files(path = "evid_qc_results", pattern = "evidence_qc_table.tsv", recursive = TRUE, full.names = TRUE)
-evid_qc_path <- evid_qc_path[grep("call-MakeQcTable", evid_qc_path)]
+evid_qc_files <- list.files(path = evidence_qc_results, pattern = "evidence_qc_table.tsv", recursive = TRUE, full.names = TRUE)
+evid_qc_path <- evid_qc_files[grep("call-MakeQcTable", evid_qc_files)]
 evid_qc_file <- read.table(evid_qc_path, sep = "\t", header = TRUE)[1:num_samples,]
 
 ### Load insertsize data
-insertsize_paths <- list.files(path = "insert_size_files", 
+insertsize_paths <- list.files(path = insert_size_results, 
                                pattern = "\\.insert_size_metrics\\.txt$", 
                                full.names = TRUE)
 
 ## Load sex assignment files
-evid_sex_path <- list.files(path = "evid_qc_results", pattern = "sample_sex_assignments.txt.gz", recursive = TRUE, full.names = TRUE)
-evid_sex_path <- evid_sex_path[grep("call-MakeQcTable", evid_sex_path)]
+evid_sex_files <- list.files(path = evidence_qc_results, pattern = "sample_sex_assignments.txt.gz", recursive = TRUE, full.names = TRUE)
+evid_sex_path <- evid_sex_files[grep("call-MakeQcTable", evid_sex_files)][1]
 evid_sex_file <- read.table(gzfile(evid_sex_path), sep = "\t", header = TRUE)
 
 
