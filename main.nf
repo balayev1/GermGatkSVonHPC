@@ -39,7 +39,10 @@ workflow {
 
     // 5. Run Sample QC (Jointly for all samples)
     // Collect the insert size metrics files for all samples to pass to Sample QC
-    insert_size_folders = picard_results.metrics.mix(picard_results.histogram).collect()
+    insert_size_folders = picard_results.metrics
+    .mix(picard_results.histogram)
+    .map{ meta, file -> file }
+    .collect()
 
     // Get the manifest metadata file
     meta_file = gse_results.full_evidence_dir
