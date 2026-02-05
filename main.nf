@@ -7,6 +7,7 @@ nextflow.enable.dsl=2
 include { GATHER_SAMPLE_EVIDENCE } from './modules/gather_sample_evidence.nf'
 include { EVIDENCE_QC     } from './modules/evidence_qc.nf'
 include { COLLECT_INSERT_SIZE } from './modules/collect_insert_size.nf'
+include { SAMPLE_QC      } from './modules/sample_qc.nf'
 
 workflow {
     // 1. Create channel from manifest
@@ -32,6 +33,7 @@ workflow {
     // Collect all sample IDs and folders
     sample_ids = gse_results.full_evidence_dir.map{ it[0].id }.collect()
     evidence_folders = gse_results.full_evidence_dir.map{ it[1] }.collect()
+    insert_metrics_folders = picard_results.metrics.mix(picard_results.histogram).collect()
 
     // Execute Evidence QC
     evidence_qc_results = EVIDENCE_QC(sample_ids, evidence_folders)
@@ -46,5 +48,5 @@ workflow {
     num_samples_ch = samples_ch.count()
 
     // Execute Sample QC 
-    SAMPLE_QC(meta_file, workflow.workDir, num_samples_ch, picard_results, evidence_qc_results)
+    SAMPLE_QC(meta_file, workflow.workDir, num_samples_ch, insert_metrics_folders, evidence_qc_results)
 }

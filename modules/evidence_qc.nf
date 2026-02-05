@@ -72,6 +72,7 @@ process EVIDENCE_QC {
         -p ${params.deps_zip}
 
     mkdir -p evidence_qc_results
-    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -maxdepth 2 -exec mv -t evidence_qc_results/ {} +
+    cp evidence_qc_inputs.json evidence_qc_results/
+    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -exec cp -r {} evidence_qc_results/ \\;
     """
 }

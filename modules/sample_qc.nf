@@ -5,6 +5,8 @@ nextflow.enable.dsl=2
 process SAMPLE_QC {
     tag "Sample_QC"
     
+    container 'docker://rocker/tidyverse:latest'
+
     input:
     path metadata_tsv
     val work_dir
