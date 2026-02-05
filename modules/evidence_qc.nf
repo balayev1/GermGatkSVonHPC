@@ -9,7 +9,7 @@ process EVIDENCE_QC {
     path "all_samples/*" 
 
     output:
-    path "evidence_qc_results/*", emit: evidence_qc_results
+    path "evidence_qc_results", emit: evidence_qc_results
 
     script:
     def template_path = file(params.evidqc_template ?: "${params.gatk_sv_dir}/data/EvidenceQC_inputs.json").toAbsolutePath()

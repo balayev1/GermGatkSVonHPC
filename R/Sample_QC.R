@@ -23,8 +23,7 @@ suppressPackageStartupMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 metadata_path <- args[1]
-nf_work_dir <- args[2]
-num_samples  <- as.numeric(args[3])
+num_samples  <- as.numeric(args[2])
 
 ## Set output directory
 outdir <- "Sample_QC_out" 
@@ -33,8 +32,8 @@ if (!dir.exists(outdir)) {
 }
 
 ## Load input QC data
-# If you change the input to 'path evid_results', you can just do:
 evid_qc_path <- list.files(path = "evid_qc_results", pattern = "evidence_qc_table.tsv", recursive = TRUE, full.names = TRUE)
+evid_qc_path <- evid_qc_path[grep("call-MakeQcTable", evid_qc_path)]
 evid_qc_file <- read.table(evid_qc_path, sep = "\t", header = TRUE)[1:num_samples,]
 
 ### Load insertsize data
@@ -44,6 +43,7 @@ insertsize_paths <- list.files(path = "insert_size_files",
 
 ## Load sex assignment files
 evid_sex_path <- list.files(path = "evid_qc_results", pattern = "sample_sex_assignments.txt.gz", recursive = TRUE, full.names = TRUE)
+evid_sex_path <- evid_sex_path[grep("call-MakeQcTable", evid_sex_path)]
 evid_sex_file <- read.table(gzfile(evid_sex_path), sep = "\t", header = TRUE)
 
 

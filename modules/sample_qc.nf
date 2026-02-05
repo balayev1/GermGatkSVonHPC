@@ -9,7 +9,6 @@ process SAMPLE_QC {
 
     input:
     path metadata_tsv
-    val work_dir
     val num_samples
     path "insert_size_files/*"
     path evid_qc_results
@@ -19,6 +18,6 @@ process SAMPLE_QC {
 
     script:
     """
-    Rscript ${baseDir}/R/Sample_QC.R ${metadata_tsv} "${work_dir}" ${num_samples}
+    Rscript ${baseDir}/R/Sample_QC.R ${metadata_tsv} ${num_samples}
     """
 }
