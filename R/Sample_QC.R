@@ -33,14 +33,17 @@ if (!dir.exists(outdir)) {
 }
 
 ## Load input QC data
-evid_qc_path <- system(paste0("find ", nf_work_dir, " -path '*/*/evidence_qc_results/call-MakeQcTable/execution/*.evidence_qc_table.tsv'"), intern = TRUE)
+# If you change the input to 'path evid_results', you can just do:
+evid_qc_path <- list.files(path = "evid_qc_results", pattern = "evidence_qc_table.tsv", recursive = TRUE, full.names = TRUE)
 evid_qc_file <- read.table(evid_qc_path, sep = "\t", header = TRUE)[1:num_samples,]
 
 ### Load insertsize data
-insertsize_paths <- system(paste0("find ", nf_work_dir, " -name '*.insert_size_metrics.txt'"), intern = TRUE)
+insertsize_paths <- list.files(path = "insert_size_files", 
+                               pattern = "\\.insert_size_metrics\\.txt$", 
+                               full.names = TRUE)
 
 ## Load sex assignment files
-evid_sex_path <- system(paste0("find ", nf_work_dir, " -path '*/*/evidence_qc_results/call-MakeQcTable/execution/ploidy_est/sample_sex_assignments.txt.gz'"), intern = TRUE)
+evid_sex_path <- list.files(path = "evid_qc_results", pattern = "sample_sex_assignments.txt.gz", recursive = TRUE, full.names = TRUE)
 evid_sex_file <- read.table(gzfile(evid_sex_path), sep = "\t", header = TRUE)
 
 
@@ -80,6 +83,7 @@ reason_excluded <- c(reason_excluded, rep("high_median_coverage", length(high_co
 ### Collect median insert size for each sample
 for (insertsize_path in insertsize_paths) {
     insertsize_file <- read.table(insertsize_path, sep = "\t", header = TRUE, skip = 6, nrows = 1, comment.char = "")
+    # Use basename to get the sample ID from the filename
     sample_id <- gsub(".insert_size_metrics.txt", "", basename(insertsize_path))
     evid_qc_file$median_insert_size[evid_qc_file$sample_id == sample_id] <- insertsize_file$MEDIAN_INSERT_SIZE
 }

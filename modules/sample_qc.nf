@@ -11,8 +11,8 @@ process SAMPLE_QC {
     path metadata_tsv
     val work_dir
     val num_samples
-    val wait_picard
-    val wait_evid_qc
+    path "insert_size_files/*"
+    path evid_qc_results
 
     output:
     path "Sample_QC_out/*", emit: sample_qc_results

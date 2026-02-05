@@ -30,15 +30,17 @@ workflow {
     gse_results = GATHER_SAMPLE_EVIDENCE(samples_ch)
 
     // 4. Run EvidenceQC (Jointly for all samples)
-    // Collect all sample IDs and folders
+    // Collect all sample IDs and folders from the GatherSampleEvidence results to pass to EvidenceQC
     sample_ids = gse_results.full_evidence_dir.map{ it[0].id }.collect()
     evidence_folders = gse_results.full_evidence_dir.map{ it[1] }.collect()
-    insert_metrics_folders = picard_results.metrics.mix(picard_results.histogram).collect()
 
     // Execute Evidence QC
     evidence_qc_results = EVIDENCE_QC(sample_ids, evidence_folders)
 
     // 5. Run Sample QC (Jointly for all samples)
+    // Collect the insert size metrics files for all samples to pass to Sample QC
+    insert_size_folders = picard_results.metrics.mix(picard_results.histogram).collect()
+
     // Get the manifest metadata file
     meta_file = gse_results.full_evidence_dir
         .map { meta, path -> "${meta.id}\t${meta.gender}" }
@@ -48,5 +50,5 @@ workflow {
     num_samples_ch = samples_ch.count()
 
     // Execute Sample QC 
-    SAMPLE_QC(meta_file, workflow.workDir, num_samples_ch, insert_metrics_folders, evidence_qc_results)
+    SAMPLE_QC(meta_file, workflow.workDir, num_samples_ch, insert_size_folders, evidence_qc_results)
 }
