@@ -53,5 +53,8 @@ workflow {
     num_samples_ch = samples_ch.count()
 
     // Execute Sample QC 
-    SAMPLE_QC(meta_file, num_samples_ch, insert_size_folders, evidence_qc_results.evidence_qc_results)
+    sample_qc_results = SAMPLE_QC(meta_file, num_samples_ch, insert_size_folders, evidence_qc_results.evidence_qc_results)
+
+    // 6. Run Train GCNV (Jointly for all samples)
+    TRAIN_GCNV(sample_ids, evidence_folders)
 }
