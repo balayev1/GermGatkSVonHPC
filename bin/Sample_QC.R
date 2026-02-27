@@ -1,12 +1,12 @@
-#!/usr/bin/env R
+#!/usr/bin/env Rscript
 
 # Sample_QC.R script filters poor quality samples based on  QC metrics for downstream germline SV analysis
 # Input: sample metadata, nextflow working directory, number of samples to process
 # Output:
 # Algorithm: filters outlier samples based on:
-# I) Extremely high/low whole-genome dosage score (<1st quartile - 7*MAD/>3rd quartile + 7*MAD)
+# I) Extremely high/low whole-genome dosage score (<1st quartile - 8*MAD/>3rd quartile + 8*MAD)
 # II) Extremely high/low median coverage (<15X or >60X)
-# III) Extremely high/low median insert size (<1st quartile - 7*MAD/>3rd quartile + 7*MAD)
+# III) Extremely high/low median insert size (<1st quartile - 8*MAD/>3rd quartile + 8*MAD)
 # IV) Autosomal aneuploidy (MAD of autosomal ploidy > 0.1)
 # V) Sex discordance (discordance between actual and assigned sex)
 # VI) Ambiguous sex assignment (probability of mosaicism > 0.5)
@@ -53,7 +53,7 @@ evid_sex_file <- read.table(gzfile(evid_sex_path), sep = "\t", header = TRUE)
 excluded_samples <- c()
 reason_excluded <- c()
 ## I. Filter by WGD, whole-genome dosage score = log-ratio of observed coverage versus expected coverage in specific, stable regions of the genome defined by wgd_mask file
-### Remove samples with outlier dosage scores (based on 1st quartile - 7 * MAD and 3rd quartile + 7 * MAD)
+### Remove samples with outlier dosage scores (based on 1st quartile - 8 * MAD and 3rd quartile + 8 * MAD)
 ### In general, distribution of WGD for PCR- samples is expected to be slightly lower than 0, and the distribution of WGD for PCR+ samples is 
 ### expected to be slightly greater than 0.
 
@@ -61,12 +61,12 @@ first_quartile <- quantile(evid_qc_file$wgd_score, 0.25)
 third_quartile <- quantile(evid_qc_file$wgd_score, 0.75)
 mad_wgd <- mad(evid_qc_file$wgd_score)
 
-if (min(evid_qc_file$wgd_score) < (first_quartile - 7 * mad_wgd) | max(evid_qc_file$wgd_score) > (third_quartile + 7 * mad_wgd)) {
-    low_outliers <- evid_qc_file$sample_id[evid_qc_file$wgd_score < (first_quartile - 7 * mad_wgd)]
+if (min(evid_qc_file$wgd_score) < (first_quartile - 8 * mad_wgd) | max(evid_qc_file$wgd_score) > (third_quartile + 8 * mad_wgd)) {
+    low_outliers <- evid_qc_file$sample_id[evid_qc_file$wgd_score < (first_quartile - 8 * mad_wgd)]
     excluded_samples <- c(excluded_samples, as.character(low_outliers))
     reason_excluded <- c(reason_excluded, rep("low_WGD_score", length(low_outliers)))
 
-    high_outliers <- evid_qc_file$sample_id[evid_qc_file$wgd_score > (third_quartile + 7 * mad_wgd)]
+    high_outliers <- evid_qc_file$sample_id[evid_qc_file$wgd_score > (third_quartile + 8 * mad_wgd)]
     excluded_samples <- c(excluded_samples, as.character(high_outliers))
     reason_excluded <- c(reason_excluded, rep("high_WGD_score", length(high_outliers)))
 }
@@ -90,17 +90,17 @@ for (insertsize_path in insertsize_paths) {
     evid_qc_file$median_insert_size[evid_qc_file$sample_id == sample_id] <- insertsize_file$MEDIAN_INSERT_SIZE
 }
 
-## Remove samples with outlier insert size (based on 1st quartile - 7 * MAD and 3rd quartile + 7 * MAD)
+## Remove samples with outlier insert size (based on 1st quartile - 8 * MAD and 3rd quartile + 8 * MAD)
 first_quartile <- quantile(evid_qc_file$median_insert_size, 0.25)
 third_quartile <- quantile(evid_qc_file$median_insert_size, 0.75)
 mad_insert_size <- mad(evid_qc_file$median_insert_size)
 
-if (min(evid_qc_file$median_insert_size) < (first_quartile - 7 * mad_insert_size) | max(evid_qc_file$median_insert_size) > (third_quartile + 7 * mad_insert_size)) {
-    low_outliers <- evid_qc_file$sample_id[evid_qc_file$median_insert_size < (first_quartile - 7 * mad_insert_size)]
+if (min(evid_qc_file$median_insert_size) < (first_quartile - 8 * mad_insert_size) | max(evid_qc_file$median_insert_size) > (third_quartile + 8 * mad_insert_size)) {
+    low_outliers <- evid_qc_file$sample_id[evid_qc_file$median_insert_size < (first_quartile - 8 * mad_insert_size)]
     excluded_samples <- c(excluded_samples, as.character(low_outliers))
     reason_excluded <- c(reason_excluded, rep("low_median_insert_size", length(low_outliers)))
 
-    high_outliers <- evid_qc_file$sample_id[evid_qc_file$median_insert_size > (third_quartile + 7 * mad_insert_size)]
+    high_outliers <- evid_qc_file$sample_id[evid_qc_file$median_insert_size > (third_quartile + 8 * mad_insert_size)]
     excluded_samples <- c(excluded_samples, as.character(high_outliers))
     reason_excluded <- c(reason_excluded, rep("high_median_insert_size", length(high_outliers)))
 }
@@ -153,8 +153,8 @@ qc_colors <- c("PASS" = "#377eb8", "FAIL" = "#e41a1c")
 wgd_fail_ids <- excluded_samples[reason_excluded %in% c("low_WGD_score", "high_WGD_score")]
 evid_qc_file$wgd_qc_status <- factor(ifelse(evid_qc_file$sample_id %in% wgd_fail_ids, "FAIL", "PASS"), levels = c("PASS", "FAIL"))
 
-wgd_low <- quantile(evid_qc_file$wgd_score, 0.25) - (7 * mad(evid_qc_file$wgd_score))
-wgd_high <- quantile(evid_qc_file$wgd_score, 0.75) + (7 * mad(evid_qc_file$wgd_score))
+wgd_low <- quantile(evid_qc_file$wgd_score, 0.25) - (8 * mad(evid_qc_file$wgd_score))
+wgd_high <- quantile(evid_qc_file$wgd_score, 0.75) + (8 * mad(evid_qc_file$wgd_score))
 
 p1 <- ggplot(evid_qc_file, aes(x = wgd_score, fill = wgd_qc_status)) +
         geom_histogram(bins = 30, color = "black", alpha = 0.7, show.legend = TRUE) +
@@ -180,8 +180,8 @@ ggsave(filename = file.path(outdir, "Median_Coverage_Distribution.pdf"), plot = 
 insert_fail_ids <- excluded_samples[reason_excluded %in% c("low_median_insert_size", "high_median_insert_size")]
 evid_qc_file$insert_qc_status <- factor(ifelse(evid_qc_file$sample_id %in% insert_fail_ids, "FAIL", "PASS"), levels = c("PASS", "FAIL"))
 
-insert_low <- quantile(evid_qc_file$median_insert_size, 0.25) - (7 * mad(evid_qc_file$median_insert_size))
-insert_high <- quantile(evid_qc_file$median_insert_size, 0.75) + (7 * mad(evid_qc_file$median_insert_size))
+insert_low <- quantile(evid_qc_file$median_insert_size, 0.25) - (8 * mad(evid_qc_file$median_insert_size))
+insert_high <- quantile(evid_qc_file$median_insert_size, 0.75) + (8 * mad(evid_qc_file$median_insert_size))
 
 p3 <- ggplot(evid_qc_file, aes(x = median_insert_size, fill = insert_qc_status)) +
         geom_histogram(bins = 30, color = "black", alpha = 0.7, show.legend = TRUE) +

@@ -1,0 +1,3 @@
+sample_id,bam_or_cram,bai_or_crai,sample_set_id,sample_set_set_id,cohort_ped
+SAMPLE_001,/path/to/SAMPLE_001.bam,/path/to/SAMPLE_001.bai,BATCH_01,COHORT_01,assets/cohort.ped
+SAMPLE_002,/path/to/SAMPLE_002.bam,/path/to/SAMPLE_002.bai,BATCH_01,COHORT_01,assets/cohort.ped

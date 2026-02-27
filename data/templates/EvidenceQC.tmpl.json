@@ -1,0 +1,18 @@
+{
+  "EvidenceQC.batch": "__INJECT_BATCH__",
+  "EvidenceQC.samples": "__INJECT_SAMPLES__",
+  "EvidenceQC.counts": "__INJECT_COUNTS__",
+  "EvidenceQC.manta_vcfs": "__INJECT_MANTA_VCFS__",
+  "EvidenceQC.wham_vcfs": "__INJECT_WHAM_VCFS__",
+  "EvidenceQC.scramble_vcfs": "__INJECT_SCRAMBLE_VCFS__",
+  "EvidenceQC.run_vcf_qc": "__SET_BY_CONFIG__",
+  "EvidenceQC.run_ploidy": "__SET_BY_CONFIG__",
+  "EvidenceQC.genome_file": "__SET_BY_CONFIG__",
+  "EvidenceQC.wgd_scoring_mask": "__SET_BY_CONFIG__",
+  "EvidenceQC.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "EvidenceQC.sv_base_docker": "__SET_BY_CONFIG__",
+  "EvidenceQC.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "EvidenceQC.sv_pipeline_qc_docker": "__SET_BY_CONFIG__",
+  "EvidenceQC.median_cov_mem_gb_per_sample": "__SET_BY_CONFIG__",
+  "EvidenceQC.disk_overhead_bincov_gb": "__SET_BY_CONFIG__"
+}

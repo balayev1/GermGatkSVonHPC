@@ -48,10 +48,12 @@ The pipeline is organized into three sequential modules. Each requires specific 
 * **Nextflow Config:** Update the parameters for `COLLECT_INSERT_SIZE` block.
 
 ### 2. Module: GatherSampleEvidence
-* **JSON Template:** Edit `data/GatherSampleEvidence_inputs.json`. 
-    * Update paths for required resources (reference genome, contig list and et.c.). To find some of resources, see [link](https://github.com/broadinstitute/gatk-sv/blob/main/inputs/values/resources_hg38.json)
-    * **Note:** Leave `sample_id`, `bam_or_cram_file`, and `bam_or_cram_index` empty; the pipeline injects these per sample.
-* **Nextflow Config:** Adjust `GATHER_SAMPLE_EVIDENCE` block parameters.
+* **Config-driven JSON:** `modules/gather_sample_evidence.nf` now builds Cromwell JSON with Groovy `Map + JsonOutput`.
+    * Static resources should be configured via `conf/igenomes.config` (or overridden in `nextflow.config`).
+    * Docker image tags should be configured in `conf/dockers.config`.
+    * Booleans and optional runtime attributes are controlled via `nextflow.config` (`gse_collect_*`, `gse_run_*`, `gse_runtime_attr_*`).
+    * `sample_id`, `bam_or_cram_file`, and `bam_or_cram_index` are injected per sample from workflow inputs.
+* **Nextflow Config:** Adjust `GATHER_SAMPLE_EVIDENCE` process resources in `nextflow.config`.
 
 ### 3. Module: EvidenceQC
 * **JSON Template:** Edit `data/EvidenceQC_inputs.json`. This module estimates ploidy and assigns sex across the batch.

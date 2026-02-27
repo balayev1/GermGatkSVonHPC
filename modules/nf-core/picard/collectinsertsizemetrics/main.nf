@@ -9,7 +9,7 @@ process PICARD_COLLECTINSERTSIZEMETRICS {
         : 'community.wave.seqera.io/library/picard:3.4.0--e9963040df0a9bf6'}"
 
     input:
-    tuple val(meta), path(bam)
+    tuple val(meta), path(bam), path(bai)
 
     output:
     tuple val(meta), path("*.txt"), emit: metrics
