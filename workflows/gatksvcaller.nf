@@ -9,15 +9,6 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    CHANNEL SETUP
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-// Initialize file channels based on params, defined in the params.genomes[params.genome] scope
-fasta                       = params.fasta                      ? Channel.fromPath(params.fasta).first()                        : Channel.empty()
-fasta_fai                   = params.fasta_fai                  ? Channel.fromPath(params.fasta_fai).first()                  : Channel.empty()
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL/NF-CORE MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
@@ -45,8 +36,7 @@ workflow GATKSVCALLER {
     // SUBWORKFLOW: Collect per-sample SV evidence, perform sample QC and create batches if necessary
     //
     SAMPLE_PROCESSING (
-        ch_sample,
-        fasta
+        ch_sample
     )
     ch_versions = ch_versions.mix(SAMPLE_PROCESSING.out.versions)
 

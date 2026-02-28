@@ -33,7 +33,7 @@ process SAMPLE_QC {
         cp "\$f" "insert_size_files/\${sample_id}.insert_size_metrics.txt"
     done
 
-    Rscript ${projectDir}/bin/sample_qc.R \\
+    Rscript sample_qc.R \\
         sample_qc_metadata.tsv \\
         ${evidence_qc_results} \\
         insert_size_files \\

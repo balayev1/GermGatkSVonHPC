@@ -4,6 +4,7 @@
 
 include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
 include { PED_CHECK } from '../../modules/local/ped_check'
+include { MAKE_PED_SAMPLE_LIST } from '../../modules/local/ped_samplelist'
 
 workflow INPUT_CHECK {
     take:
@@ -15,7 +16,7 @@ workflow INPUT_CHECK {
         .splitCsv ( header:true, sep:',' )
         .set { rows_ch }
 
-    ped_inputs = rows_ch
+    ped_meta = rows_ch
         .map { row -> tuple(row.sample_set_set_id, row.cohort_ped, row.sample_id) }
         .groupTuple()
         .map { cohort, ped_files, sample_ids ->
@@ -26,6 +27,15 @@ workflow INPUT_CHECK {
             tuple(cohort, file(unique_peds[0]), sample_ids.unique().sort())
         }
 
+    cohort_sample_lists = MAKE_PED_SAMPLE_LIST(
+        ped_meta.map { cohort, ped_file, sample_ids -> tuple(cohort, sample_ids) }
+    ).sample_list
+
+    ped_inputs = ped_meta
+        .map { cohort, ped_file, sample_ids -> tuple(cohort, ped_file) }
+        .join(cohort_sample_lists)
+        .map { cohort, ped_file, sample_list_file -> tuple(cohort, ped_file, sample_list_file) }
+
     ped_pass = PED_CHECK(ped_inputs).pass
 
     rows_ch
@@ -33,7 +43,7 @@ workflow INPUT_CHECK {
             def bam_meta = create_bam_channel(row)
             tuple(row.sample_set_set_id, bam_meta)
         }
-        .join(ped_pass)
+        .combine(ped_pass, by: 0)
         .map { cohort, bam_meta, _ -> bam_meta }
         .set { reads }
 

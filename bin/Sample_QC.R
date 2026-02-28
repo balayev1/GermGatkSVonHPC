@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 
-# Sample_QC.R script filters poor quality samples based on  QC metrics for downstream germline SV analysis
-# Input: sample metadata, nextflow working directory, number of samples to process
-# Output:
+# sample_qc.R script filters poor quality samples based on  QC metrics for downstream germline SV analysis
+# Input: sample metadata, evidence_qc directory, insert_size directory, number of samples to process
+# Output: plots and text files
 # Algorithm: filters outlier samples based on:
 # I) Extremely high/low whole-genome dosage score (<1st quartile - 8*MAD/>3rd quartile + 8*MAD)
 # II) Extremely high/low median coverage (<15X or >60X)

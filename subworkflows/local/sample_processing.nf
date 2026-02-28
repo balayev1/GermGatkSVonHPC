@@ -3,15 +3,15 @@
 //
 
 params.options = [:]
-include { PICARD_COLLECTINSERTSIZEMETRICS   } from '../../modules/nf-core/picard/collectinsertsizemetrics/main.nf' addParams( options: params.options )
-include { GATKSV_GATHERSAMPLEEVIDENCE       } from '../../modules/local/gather_sample_evidence.nf' addParams( options: params.options )
-include { GATKSV_EVIDENCEQC as EVIDENCE_QC  } from '../../modules/local/evidence_qc.nf' addParams( options: params.options )
-include { SAMPLE_QC                         } from '../../modules/local/sample_qc.nf' addParams( options: params.options )
+include { PICARD_COLLECTINSERTSIZEMETRICS   } from '../../modules/nf-core/picard/collectinsertsizemetrics/main.nf'
+include { GATKSV_GATHERSAMPLEEVIDENCE       } from '../../modules/local/gather_sample_evidence.nf'
+include { GATKSV_EVIDENCEQC as EVIDENCE_QC  } from '../../modules/local/evidence_qc.nf'
+include { SAMPLE_QC                         } from '../../modules/local/sample_qc.nf'
+include { BATCHING                          } from '../../modules/local/batching.nf'
 
 workflow SAMPLE_PROCESSING {
     take:
     ch_sample       // channel: [ meta, file(row.bam_or_cram), file(row.bai_or_crai) ]
-    fasta           // channel: [ path(fasta) ]
 
     main:
     versions     = Channel.empty()
@@ -41,10 +41,10 @@ workflow SAMPLE_PROCESSING {
     //
     // Ploidy estimation, dosage scoring and sex assignment using GATKSV_EVIDENCEQC      
     //
-    GATKSV_EVIDENCEQC (
+    EVIDENCE_QC (
         evidqc_input
     )
-    versions = versions.mix(GATKSV_EVIDENCEQC.out.versions)
+    versions = versions.mix(EVIDENCE_QC.out.versions)
 
     insert_metrics_by_cohort = PICARD_COLLECTINSERTSIZEMETRICS.out.metrics
         .map { meta, metrics_file -> tuple(meta.cohort, meta.id, metrics_file) }
@@ -61,7 +61,7 @@ workflow SAMPLE_PROCESSING {
             tuple(cohort, file(unique_peds[0]))
         }
 
-    sample_qc_input = GATKSV_EVIDENCEQC.out.evidence_qc_results
+    sample_qc_input = EVIDENCE_QC.out.evidence_qc_results
         .join(insert_metrics_by_cohort)
         .map { cohort, sample_ids, evidence_qc_results, picard_sample_ids, insert_size_metrics ->
             tuple(cohort, sample_ids, insert_size_metrics, evidence_qc_results)
@@ -75,6 +75,18 @@ workflow SAMPLE_PROCESSING {
         sample_qc_input
     )
     versions = versions.mix(SAMPLE_QC.out.versions)
+
+    if (params.run_batching) {
+        batching_input = EVIDENCE_QC.out.evidence_qc_results
+            .map { cohort, sample_ids, evidence_qc_results -> tuple(cohort, evidence_qc_results) }
+            .join(ped_by_cohort)
+            .map { cohort, evidence_qc_results, ped_file -> tuple(cohort, evidence_qc_results, ped_file) }
+
+        BATCHING (
+            batching_input
+        )
+        versions = versions.mix(BATCHING.out.versions)
+    }
 
     emit:
     versions
