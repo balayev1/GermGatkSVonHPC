@@ -4,6 +4,11 @@ process BATCHING {
     tag "${cohort}"
     label 'process_single'
 
+    container "${workflow.containerEngine == 'singularity'
+        ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/e3/e3d753d93f57969fe76b8628a8dfcd23ef44bccd08c4ced7089c1f94bf47c89f/data'
+        : 'community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:d3becb6465454c35'}"
+
+
     input:
     tuple val(cohort), path(evidence_qc_results), path(ped_file)
 

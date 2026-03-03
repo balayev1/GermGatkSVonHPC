@@ -8,6 +8,7 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
 
     input:
     tuple val(meta), path(bam), path(bai)
+    path(sd_locs_vcf)
 
     output:
     tuple val(meta), path("${meta.id}/call-*"), emit: gse_outdir
@@ -20,6 +21,8 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
     def static_json = JsonOutput.toJson(params.tool_inputs?.gse ?: [:])
     def bam_path = bam.toRealPath().toString()
     def bai_path = bai.toRealPath().toString()
+    def sd_locs_vcf_path = sd_locs_vcf.toRealPath().toString()
+    def sv_pipeline_docker = params.sv_pipeline_virtual_env ?: params.sv_pipeline_docker
 
     def avail_mem = 3072
     if (!task.memory) {
@@ -29,7 +32,10 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
         avail_mem = (task.memory.mega * 0.8).intValue()
     }
 
-    """
+    """ 
+    module load python3/3.8.3_anaconda2020.07_mamba
+    module load java/openjdk-17.0.2
+
     mkdir -p ${prefix}
 
     render_json_template.py \
@@ -38,7 +44,11 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
         --static-json '${static_json}' \
         --set "GatherSampleEvidence.sample_id=${prefix}" \
         --set "GatherSampleEvidence.bam_or_cram_file=${bam_path}" \
-        --set "GatherSampleEvidence.bam_or_cram_index=${bai_path}"
+        --set "GatherSampleEvidence.bam_or_cram_index=${bai_path}" \
+        --set "GatherSampleEvidence.sd_locs_vcf=${sd_locs_vcf_path}" \
+        --set "GatherSampleEvidence.sv_pipeline_docker=${sv_pipeline_docker}"
+
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
 
     # Run GSE using Cromwell
     java -Xmx${avail_mem}M \\
