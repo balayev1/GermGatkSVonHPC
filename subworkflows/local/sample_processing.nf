@@ -10,7 +10,6 @@ include { GATKSV_GATHERSAMPLEEVIDENCE       } from '../../modules/local/gather_s
 include { GATKSV_EVIDENCEQC as EVIDENCE_QC  } from '../../modules/local/evidence_qc.nf'
 include { SAMPLE_QC                         } from '../../modules/local/sample_qc.nf'
 include { BATCHING                          } from '../../modules/local/batching.nf'
-include { GATK_TRAINGCNV                    } from '../../modules/local/train_gcnv.nf'
 
 workflow SAMPLE_PROCESSING {
     take:
@@ -78,18 +77,54 @@ workflow SAMPLE_PROCESSING {
     )
     versions = versions.mix(GATKSV_GATHERSAMPLEEVIDENCE.out.versions)
 
-    gse_outfiles = GATKSV_GATHERSAMPLEEVIDENCE.out.gse_outfiles
-    gse_outfiles.into { gse_for_evidqc; gse_for_traingcnv }
+    def sampleKeyForMeta = { meta -> "${meta.cohort}::${meta.id}" }
+    def keyedEvidence = { ch -> ch.map { meta, evidence_file -> tuple(sampleKeyForMeta(meta), evidence_file) } }
+    def asList = { value -> value instanceof List ? value : [value] }
+    def requireSingleSampleFile = { sampleKey, label, value ->
+        def files = asList(value).findAll { it != null }
+        if (files.size() != 1) {
+            throw new IllegalStateException("${label} resolution mismatch for '${sampleKey}': expected 1 file, found ${files.size()}")
+        }
+        files[0]
+    }
+    def keyedSingleSampleEvidence = { ch, label ->
+        ch.map { meta, evidence_file ->
+            def sampleKey = sampleKeyForMeta(meta)
+            tuple(sampleKey, requireSingleSampleFile(sampleKey, label, evidence_file))
+        }
+    }
+    def keyedEvidenceQcFile = { ch, label ->
+        ch.map { cohort, sample_ids, file_value ->
+            tuple(cohort, sample_ids, requireSingleSampleFile(cohort.toString(), label, file_value))
+        }
+    }
+
+    gse_outfiles = GATKSV_GATHERSAMPLEEVIDENCE.out.counts
+        .map { meta, counts_file -> tuple(sampleKeyForMeta(meta), meta, counts_file) }
+        .join(keyedEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.manta_vcf))
+        .join(keyedEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.wham_vcf))
+        .join(keyedEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.scramble_vcf))
+        .map { _sample_key, meta, counts_file, manta_file, wham_file, scramble_file -> tuple(meta, counts_file, manta_file, wham_file, scramble_file) }
+    gse_outfiles.into { gse_for_evidqc; gse_for_traingcnv; gse_for_batch_processing }
 
     evidqc_input = gse_for_evidqc
-        .map { meta, counts_file, manta_file, wham_file, scramble_file ->
-            tuple(meta.cohort, meta.id, counts_file, manta_file, wham_file, scramble_file)
-        }
+        .map { meta, counts_file, manta_file, wham_file, scramble_file -> tuple(meta.cohort, meta.id, counts_file, manta_file, wham_file, scramble_file) }
         .groupTuple()
 
     counts_by_sample = gse_for_traingcnv
+        .map { meta, counts_file, _manta_file, _wham_file, _scramble_file -> tuple(meta.cohort.toString(), meta.batch.toString(), meta.id.toString(), counts_file) }
+
+    evidence_by_sample_keyed = gse_for_batch_processing
         .map { meta, counts_file, manta_file, wham_file, scramble_file ->
-            tuple(meta.cohort.toString(), meta.id.toString(), counts_file)
+            tuple(sampleKeyForMeta(meta), meta.cohort.toString(), meta.batch.toString(), meta.id.toString(), counts_file, manta_file, wham_file, scramble_file)
+        }
+
+    evidence_with_required_files_keyed = evidence_by_sample_keyed
+        .join(keyedSingleSampleEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.pe_file, "PE file"))
+        .join(keyedSingleSampleEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.sr_file, "SR file"))
+        .join(keyedSingleSampleEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.sd_file, "SD file"))
+        .map { sample_key, cohort, batch, sample_id, counts_file, manta_file, wham_file, scramble_file, pe_file, sr_file, sd_file ->
+            tuple(sample_key, cohort, batch, sample_id, counts_file, pe_file, sr_file, sd_file, manta_file, wham_file, scramble_file)
         }
 
     //
@@ -99,8 +134,9 @@ workflow SAMPLE_PROCESSING {
         evidqc_input
     )
     versions = versions.mix(EVIDENCE_QC.out.versions)
-    evidence_qc_results = EVIDENCE_QC.out.evidence_qc_results
-    evidence_qc_results.into { evidence_qc_for_sample_qc; evidence_qc_for_batching }
+    evidence_qc_table = keyedEvidenceQcFile(EVIDENCE_QC.out.evidence_qc_table, "EvidenceQC table")
+    sample_sex_assignments = keyedEvidenceQcFile(EVIDENCE_QC.out.sample_sex_assignments, "sample_sex_assignments")
+    passing_samples_metadata = keyedEvidenceQcFile(EVIDENCE_QC.out.passing_samples_metadata, "passing_samples_metadata")
 
     insert_metrics_by_cohort = PICARD_COLLECTINSERTSIZEMETRICS.out.metrics
         .map { meta, metrics_file -> tuple(meta.cohort, meta.id, metrics_file) }
@@ -117,14 +153,15 @@ workflow SAMPLE_PROCESSING {
             tuple(cohort, file(unique_peds[0]))
         }
 
-    sample_qc_input = evidence_qc_for_sample_qc
-        .join(insert_metrics_by_cohort)
-        .map { cohort, sample_ids, evidence_qc_results, picard_sample_ids, insert_size_metrics ->
-            tuple(cohort, sample_ids, insert_size_metrics, evidence_qc_results)
+    sample_qc_input = evidence_qc_table
+        .join(sample_sex_assignments)
+        .map { cohort, sample_ids, evidence_qc_table_file, _sample_ids2, sample_sex_assignments_file ->
+            tuple(cohort, sample_ids, evidence_qc_table_file, sample_sex_assignments_file)
         }
+        .join(insert_metrics_by_cohort)
         .join(ped_by_cohort)
-        .map { cohort, sample_ids, insert_size_metrics, evidence_qc_results, ped_file ->
-            tuple(cohort, sample_ids, insert_size_metrics, ped_file, evidence_qc_results)
+        .map { cohort, sample_ids, evidence_qc_table_file, sample_sex_assignments_file, _picard_sample_ids, insert_size_metrics, ped_file ->
+            tuple(cohort, sample_ids, insert_size_metrics, ped_file, evidence_qc_table_file, sample_sex_assignments_file)
         }
 
     SAMPLE_QC (
@@ -133,27 +170,24 @@ workflow SAMPLE_PROCESSING {
     versions = versions.mix(SAMPLE_QC.out.versions)
 
     counts_by_sample_keyed = counts_by_sample
-        .map { cohort, sample_id, counts_file -> tuple("${cohort}::${sample_id}", cohort, sample_id, counts_file) }
+        .map { cohort, batch, sample_id, counts_file -> tuple("${cohort}::${sample_id}", cohort, batch, sample_id, counts_file) }
 
     def train_gcnv_input
+    def model_batch_assignments_keyed
     if (params.run_batching) {
-        batching_input = evidence_qc_for_batching
-            .map { cohort, sample_ids, evidence_qc_results -> tuple(cohort, evidence_qc_results) }
+        batching_input = passing_samples_metadata
+            .map { cohort, sample_ids, passing_samples_metadata_file -> tuple(cohort, passing_samples_metadata_file) }
             .join(ped_by_cohort)
-            .map { cohort, evidence_qc_results, ped_file -> tuple(cohort, evidence_qc_results, ped_file) }
+            .map { cohort, passing_samples_metadata_file, ped_file -> tuple(cohort, passing_samples_metadata_file, ped_file) }
 
         BATCHING (
             batching_input
         )
         versions = versions.mix(BATCHING.out.versions)
 
-        batch_assignments_keyed = BATCHING.out.batching_out
-            .flatMap { cohort, batching_out ->
+        batch_assignments_keyed = BATCHING.out.batch_assignments
+            .flatMap { cohort, batch_assignments_file ->
                 def cohort_name = cohort.toString()
-                def batch_assignments_file = file("${batching_out}/batching/batch_assignments.tsv")
-                if (!batch_assignments_file.exists()) {
-                    throw new IllegalStateException("Batch assignments file not found: ${batch_assignments_file}")
-                }
                 def rows = batch_assignments_file.readLines()
                 if (rows.size() <= 1) {
                     return []
@@ -169,27 +203,54 @@ workflow SAMPLE_PROCESSING {
                 }
             }
 
+        model_batch_assignments_keyed = batch_assignments_keyed
+
         train_gcnv_input = batch_assignments_keyed
             .join(counts_by_sample_keyed)
-            .map { sample_key, cohort, batch, sample_id, cohort2, sample_id2, counts_file ->
-                tuple("${cohort}__${batch}", sample_id, counts_file)
+            .map { sample_key, cohort, batch, sample_id, cohort2, batch2, sample_id2, counts_file ->
+                if (cohort != cohort2 || sample_id != sample_id2) {
+                    throw new IllegalStateException("Batch assignment join mismatch for '${sample_key}'")
+                }
+                tuple("${cohort}__${batch}", sample_id2, counts_file)
             }
             .groupTuple()
     } else {
-        // No batching requested: train one model across all samples.
+        // No automatic batching requested: train one model per input cohort+batch.
+        model_batch_assignments_keyed = counts_by_sample_keyed
+            .map { sample_key, cohort, batch, sample_id, counts_file ->
+                tuple(sample_key, cohort, batch, sample_id)
+            }
+
         train_gcnv_input = counts_by_sample_keyed
-            .map { sample_key, cohort, sample_id, counts_file ->
-                tuple("single_batch", sample_id, counts_file)
+            .map { sample_key, cohort, batch, sample_id, counts_file ->
+                tuple("${cohort}__${batch}", sample_id, counts_file)
             }
             .groupTuple()
     }
 
-    GATK_TRAINGCNV (
-        train_gcnv_input
-    )
-    versions = versions.mix(GATK_TRAINGCNV.out.versions)
+    batch_evidence_input = model_batch_assignments_keyed
+        .join(evidence_with_required_files_keyed)
+        .map { sample_key, cohort, batch, sample_id, cohort2, batch2, sample_id2, counts_file, pe_file, sr_file, sd_file, manta_file, wham_file, scramble_file ->
+            if (cohort != cohort2 || sample_id != sample_id2) {
+                throw new IllegalStateException("Batch evidence join mismatch for '${sample_key}'")
+            }
+            tuple("${cohort}__${batch}", cohort, sample_id2, counts_file, pe_file, sr_file, sd_file, manta_file, wham_file, scramble_file)
+        }
+        .groupTuple()
+        .map { batch_key, cohorts, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files ->
+            def cohort_values = cohorts.collect { it.toString() }.unique()
+            if (cohort_values.size() != 1) {
+                throw new IllegalStateException("Batch '${batch_key}' resolved to multiple cohorts: ${cohort_values.join(', ')}")
+            }
+            tuple(cohort_values[0], batch_key, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
+        }
+        .join(ped_by_cohort)
+        .map { cohort, batch_key, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, ped_file ->
+            tuple(batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
+        }
 
     emit:
     versions
-    train_gcnv_results = GATK_TRAINGCNV.out.train_gcnv_results
+    train_gcnv_input
+    batch_evidence_input
 }

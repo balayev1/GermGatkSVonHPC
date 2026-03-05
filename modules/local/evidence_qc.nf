@@ -15,7 +15,9 @@ process GATKSV_EVIDENCEQC {
     tuple val(cohort), val(sample_ids), path(count_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files)
 
     output:
-    tuple val(cohort), val(sample_ids), path("evidence_qc_results"), emit: evidence_qc_results
+    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/${cohort}.evidence_qc_table.tsv"), emit: evidence_qc_table
+    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/ploidy_est/sample_sex_assignments.txt.gz"), emit: sample_sex_assignments
+    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/passing_samples_metadata.tsv"), emit: passing_samples_metadata
     path "versions.yml", emit: versions
 
     script:
@@ -65,6 +67,8 @@ process GATKSV_EVIDENCEQC {
         --static-json '${static_json}' \\
         --merge-json-file evidence_qc_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+    
     # Execute Cromwell
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.evidqc_wdl} \\
@@ -84,7 +88,11 @@ process GATKSV_EVIDENCEQC {
     stub:
     """
     mkdir -p evidence_qc_results/call-stub
+    mkdir -p evidence_qc_results/ploidy_est
     touch evidence_qc_results/call-stub/.stub
+    touch evidence_qc_results/${cohort}.evidence_qc_table.tsv
+    touch evidence_qc_results/ploidy_est/sample_sex_assignments.txt.gz
+    touch evidence_qc_results/passing_samples_metadata.tsv
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -11,8 +11,13 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
     path(sd_locs_vcf)
 
     output:
-    tuple val(meta), path("${meta.id}/call-*"), emit: gse_outdir
-    tuple val(meta), path("${meta.id}/**/call-CountsMetrics/**/${meta.id}.counts.tsv.gz"), path("${meta.id}/**/execution/**/${meta.id}.manta.std.vcf.gz"), path("${meta.id}/**/execution/**/${meta.id}.wham.std.vcf.gz"), path("${meta.id}/**/execution/**/${meta.id}.scramble.vcf.gz"), emit: gse_outfiles
+    tuple val(meta), path("${meta.id}/call-CollectCounts/**/${meta.id}.counts.tsv.gz"), emit: counts
+    tuple val(meta), path("${meta.id}/call-CollectSVEvidence/**/${meta.id}.pe.txt.gz"), emit: pe_file
+    tuple val(meta), path("${meta.id}/call-CollectSVEvidence/**/${meta.id}.sr.txt.gz"), emit: sr_file
+    tuple val(meta), path("${meta.id}/call-CollectSVEvidence/**/${meta.id}.sd.txt.gz"), emit: sd_file
+    tuple val(meta), path("${meta.id}/call-Manta/**/${meta.id}.manta.vcf.gz"), emit: manta_vcf
+    tuple val(meta), path("${meta.id}/call-Whamg/**/${meta.id}.wham.vcf.gz"), emit: wham_vcf
+    tuple val(meta), path("${meta.id}/call-Scramble/**/${meta.id}.scramble.vcf.gz"), emit: scramble_vcf
     path "versions.yml", emit: versions
 
     script:
@@ -22,7 +27,6 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
     def bam_path = bam.toRealPath().toString()
     def bai_path = bai.toRealPath().toString()
     def sd_locs_vcf_path = sd_locs_vcf.toRealPath().toString()
-    def sv_pipeline_docker = params.sv_pipeline_virtual_env ?: params.sv_pipeline_docker
 
     def avail_mem = 3072
     if (!task.memory) {
@@ -33,8 +37,6 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
     }
 
     """ 
-    module load python3/3.8.3_anaconda2020.07_mamba
-    module load java/openjdk-17.0.2
 
     mkdir -p ${prefix}
 
@@ -45,8 +47,7 @@ process GATKSV_GATHERSAMPLEEVIDENCE {
         --set "GatherSampleEvidence.sample_id=${prefix}" \
         --set "GatherSampleEvidence.bam_or_cram_file=${bam_path}" \
         --set "GatherSampleEvidence.bam_or_cram_index=${bai_path}" \
-        --set "GatherSampleEvidence.sd_locs_vcf=${sd_locs_vcf_path}" \
-        --set "GatherSampleEvidence.sv_pipeline_docker=${sv_pipeline_docker}"
+        --set "GatherSampleEvidence.sd_locs_vcf=${sd_locs_vcf_path}"
 
     unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
 

@@ -1,0 +1,18 @@
+{
+  "GenotypeBatch.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "GenotypeBatch.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "GenotypeBatch.gatk_docker": "__SET_BY_CONFIG__",
+  "GenotypeBatch.pesr_exclusion_intervals": "__SET_BY_CONFIG__",
+  "GenotypeBatch.reference_dict": "__SET_BY_CONFIG__",
+  "GenotypeBatch.contig_list": "__SET_BY_CONFIG__",
+  "GenotypeBatch.depth_exclusion_intervals": "__SET_BY_CONFIG__",
+  "GenotypeBatch.training_intervals": "__SET_BY_CONFIG__",
+  "GenotypeBatch.batch": "__INJECT_BATCH__",
+  "GenotypeBatch.rf_cutoffs": "__INJECT_RF_CUTOFFS__",
+  "GenotypeBatch.pe_file": "__INJECT_PE_FILE__",
+  "GenotypeBatch.rd_file": "__INJECT_RD_FILE__",
+  "GenotypeBatch.sr_file": "__INJECT_SR_FILE__",
+  "GenotypeBatch.median_coverage": "__INJECT_MEDIAN_COVERAGE__",
+  "GenotypeBatch.vcf": "__INJECT_VCF__",
+  "GenotypeBatch.ploidy_table": "__INJECT_PLOIDY_TABLE__"
+}

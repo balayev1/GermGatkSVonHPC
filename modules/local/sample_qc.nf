@@ -7,11 +7,11 @@ process SAMPLE_QC {
     container 'docker://rocker/tidyverse:latest'
 
     input:
-    tuple val(cohort), val(sample_ids), path(insert_size_metrics), path(ped_file), path(evidence_qc_results)
+    tuple val(cohort), val(sample_ids), path(insert_size_metrics), path(ped_file), path(evidence_qc_table), path(sample_sex_assignments)
 
     output:
-    path "*.pdf", emit: sample_qc_plots
-    path "*.tsv", emit: sample_qc_reports
+    path("*.pdf"), emit: sample_qc_plots
+    path("*.tsv"), emit: sample_qc_reports
     path "versions.yml", emit: versions
 
     script:
@@ -35,7 +35,8 @@ process SAMPLE_QC {
 
     Rscript sample_qc.R \\
         sample_qc_metadata.tsv \\
-        ${evidence_qc_results} \\
+        "${evidence_qc_table}" \\
+        "${sample_sex_assignments}" \\
         insert_size_files \\
         ${num_samples}
 

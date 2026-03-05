@@ -9,9 +9,18 @@ process GATK_TRAINGCNV {
     input:
     tuple val(cohort), val(sample_ids), path(count_files)  // (Mandatory!) channel: [cohort, sample_ids, count_files]
 
-
     output:
-    tuple val(cohort), path("train_gcnv_results"), emit: train_gcnv_results
+    tuple val(cohort), path("**/${meta.cohort}-contig-ploidy-model.tar.gz"), emit: cohort_contig_ploidy_model_tar
+    tuple val(cohort), path("**/${meta.cohort}-gcnv-model-shard-*.tar.gz"), emit: cohort_gcnv_model_tars
+    tuple val(cohort), path("**/${meta.cohort}-contig-ploidy-calls.tar.gz"), emit: cohort_contig_ploidy_calls_tar
+    tuple val(cohort), path("**/${meta.cohort}-gcnv-calls-shard-*.tar.gz"), emit: cohort_gcnv_calls_tars
+    tuple val(cohort), path("**/genotyped-segments-*.vcf.gz"), emit: cohort_genotyped_segments_vcfs
+    tuple val(cohort), path("**/${meta.cohort}-gcnv-tracking-shard*.tar.gz"), emit: cohort_gcnv_tracking_tars
+    tuple val(cohort), path("**/genotyped-intervals-*.vcf.gz"), emit: cohort_genotyped_intervals_vcfs
+    tuple val(cohort), path("**/denoised_copy_ratios-*.tsv"), emit: cohort_denoised_copy_ratios
+    tuple val(cohort), path("**/*.annotated.tsv"), emit: annotated_intervals, optional=true
+    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_cnv, optional=true
+    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_ploidy, optional=true
     path "versions.yml", emit: versions
 
     script:
@@ -21,25 +30,6 @@ process GATK_TRAINGCNV {
     def cohort_name = cohort?.toString()?.trim()
     if (!cohort_name) {
         throw new IllegalArgumentException("TrainGCNV cohort is required")
-    }
-    def required_static_keys = [
-        "TrainGCNV.reference_fasta",
-        "TrainGCNV.reference_index",
-        "TrainGCNV.reference_dict",
-        "TrainGCNV.ref_copy_number_autosomal_contigs",
-        "TrainGCNV.allosomal_contigs",
-        "TrainGCNV.contig_ploidy_priors",
-        "TrainGCNV.exclude_intervals_for_filter_intervals_ploidy",
-        "TrainGCNV.exclude_intervals_for_filter_intervals_cnv",
-        "TrainGCNV.num_intervals_per_scatter",
-        "TrainGCNV.sv_base_mini_docker",
-        "TrainGCNV.linux_docker",
-        "TrainGCNV.gatk_docker"
-    ]
-    required_static_keys.each { key ->
-        if (!static_map.containsKey(key) || static_map[key] == null || static_map[key].toString().trim() == "") {
-            throw new IllegalArgumentException("TrainGCNV required config missing: ${key}")
-        }
     }
 
     def asList = { value -> value instanceof List ? value : [value] }
@@ -82,6 +72,8 @@ process GATK_TRAINGCNV {
     mkdir -p train_gcnv_results
     cp train_gcnv_inputs.json train_gcnv_results/
     find cromwell-executions/TrainGCNV/ -name "call-*" -type d -exec cp -r {} train_gcnv_results/ \\;
+    touch train_gcnv_results/placeholder.gcnv_model_tars.tar
+    touch train_gcnv_results/placeholder.contig_ploidy_model_tar.tar
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -93,6 +85,8 @@ process GATK_TRAINGCNV {
     """
     mkdir -p train_gcnv_results/call-stub
     touch train_gcnv_results/call-stub/.stub
+    touch train_gcnv_results/placeholder.gcnv_model_tars.tar
+    touch train_gcnv_results/placeholder.contig_ploidy_model_tar.tar
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

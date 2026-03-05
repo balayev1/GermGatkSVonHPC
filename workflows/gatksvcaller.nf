@@ -27,6 +27,8 @@ ch_reference_dict = Channel.value(file(params.reference_dict, checkIfExists: tru
 */
 include { INPUT_CHECK              } from '../subworkflows/local/input_check'
 include { SAMPLE_PROCESSING        } from '../subworkflows/local/sample_processing'
+include { BATCH_PROCESSING         } from '../subworkflows/local/batch_processing'
+include { JOINT_COHORT_CALLING     } from '../subworkflows/local/joint_cohort_calling'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,4 +58,26 @@ workflow GATKSVCALLER {
         ch_reference_dict
     )
     ch_versions = ch_versions.mix(SAMPLE_PROCESSING.out.versions)
+
+    //
+    // SUBWORKFLOW: Train gCNV models per inferred cohort/batch grouping
+    //
+    BATCH_PROCESSING (
+        SAMPLE_PROCESSING.out.train_gcnv_input,
+        SAMPLE_PROCESSING.out.batch_evidence_input
+    )
+    ch_versions = ch_versions.mix(BATCH_PROCESSING.out.versions)
+
+    JOINT_COHORT_CALLING (
+        BATCH_PROCESSING.out.batch_cohort,
+        BATCH_PROCESSING.out.filtered_depth_vcf,
+        BATCH_PROCESSING.out.filtered_pesr_vcf,
+        BATCH_PROCESSING.out.generate_batch_metrics_ploidy_table,
+        BATCH_PROCESSING.out.filter_batch_sites_cutoffs,
+        BATCH_PROCESSING.out.merged_PE,
+        BATCH_PROCESSING.out.merged_bincov,
+        BATCH_PROCESSING.out.merged_SR,
+        BATCH_PROCESSING.out.median_cov
+    )
+    ch_versions = ch_versions.mix(JOINT_COHORT_CALLING.out.versions)
 }

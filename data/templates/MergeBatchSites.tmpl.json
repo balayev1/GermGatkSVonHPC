@@ -1,0 +1,12 @@
+{
+  "MergeBatchSites.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "MergeBatchSites.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "MergeBatchSites.gatk_docker": "__SET_BY_CONFIG__",
+  "MergeBatchSites.reference_fasta": "__SET_BY_CONFIG__",
+  "MergeBatchSites.reference_fasta_fai": "__SET_BY_CONFIG__",
+  "MergeBatchSites.reference_dict": "__SET_BY_CONFIG__",
+  "MergeBatchSites.pesr_vcfs": "__INJECT_PESR_VCFS__",
+  "MergeBatchSites.depth_vcfs": "__INJECT_DEPTH_VCFS__",
+  "MergeBatchSites.ploidy_tables": "__INJECT_PLOIDY_TABLES__",
+  "MergeBatchSites.cohort": "__INJECT_COHORT__"
+}

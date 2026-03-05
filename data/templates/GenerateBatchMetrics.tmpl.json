@@ -1,0 +1,23 @@
+{
+  "GenerateBatchMetrics.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.gatk_docker": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.rmsk": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.segdups": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.reference_dict": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.primary_contigs_list": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.chr_x": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.chr_y": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.records_per_shard_agg": "__SET_BY_CONFIG__",
+  "GenerateBatchMetrics.batch": "__INJECT_BATCH__",
+  "GenerateBatchMetrics.ped_file": "__INJECT_PED__",
+  "GenerateBatchMetrics.pe_file": "__INJECT_PE__",
+  "GenerateBatchMetrics.baf_file": "__INJECT_BAF__",
+  "GenerateBatchMetrics.rd_file": "__INJECT_RD__",
+  "GenerateBatchMetrics.sr_file": "__INJECT_SR__",
+  "GenerateBatchMetrics.median_file": "__INJECT_MEDIAN__",
+  "GenerateBatchMetrics.depth_vcf": "__INJECT_DEPTH_VCF__",
+  "GenerateBatchMetrics.manta_vcf": "__INJECT_MANTA_VCF__",
+  "GenerateBatchMetrics.wham_vcf": "__INJECT_WHAM_VCF__",
+  "GenerateBatchMetrics.scramble_vcf": "__INJECT_SCRAMBLE_VCF__"
+}

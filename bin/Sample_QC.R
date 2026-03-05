@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # sample_qc.R script filters poor quality samples based on  QC metrics for downstream germline SV analysis
-# Input: sample metadata, evidence_qc directory, insert_size directory, number of samples to process
+# Input: sample metadata, evidence QC table, sample sex assignments, insert_size directory, number of samples to process
 # Output: plots and text files
 # Algorithm: filters outlier samples based on:
 # I) Extremely high/low whole-genome dosage score (<1st quartile - 8*MAD/>3rd quartile + 8*MAD)
@@ -23,9 +23,10 @@ suppressPackageStartupMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 metadata_path <- args[1]
-evidence_qc_results <- args[2]
-insert_size_results <- args[3]
-num_samples  <- as.numeric(args[4])
+evidence_qc_table <- args[2]
+sample_sex_assignments <- args[3]
+insert_size_results <- args[4]
+num_samples  <- as.numeric(args[5])
 
 ## Set output directory
 outdir <- "." 
@@ -34,9 +35,7 @@ if (!dir.exists(outdir)) {
 }
 
 ## Load input QC data
-evid_qc_files <- list.files(path = evidence_qc_results, pattern = "evidence_qc_table.tsv", recursive = TRUE, full.names = TRUE)
-evid_qc_path <- evid_qc_files[grep("call-MakeQcTable", evid_qc_files)]
-evid_qc_file <- read.table(evid_qc_path, sep = "\t", header = TRUE)[1:num_samples,]
+evid_qc_file <- read.table(evidence_qc_table, sep = "\t", header = TRUE)[1:num_samples,]
 
 ### Load insertsize data
 insertsize_paths <- list.files(path = insert_size_results, 
@@ -44,9 +43,7 @@ insertsize_paths <- list.files(path = insert_size_results,
                                full.names = TRUE)
 
 ## Load sex assignment files
-evid_sex_files <- list.files(path = evidence_qc_results, pattern = "sample_sex_assignments.txt.gz", recursive = TRUE, full.names = TRUE)
-evid_sex_path <- evid_sex_files[grep("call-MakeQcTable", evid_sex_files)][1]
-evid_sex_file <- read.table(gzfile(evid_sex_path), sep = "\t", header = TRUE)
+evid_sex_file <- read.table(gzfile(sample_sex_assignments), sep = "\t", header = TRUE)
 
 
 # -------------------- Filters --------------------
@@ -231,7 +228,7 @@ ggsave(filename = file.path(outdir, "Sex_Discordance.pdf"), plot = p5, width = 1
 ### VI. Structural Variant Counts by Caller
 evid_qc_long <- evid_qc_file %>%
   pivot_longer(
-    cols = starts_with(c("Manta_", "Wham_", "Scramble_", "Melt_"), ignore.case = FALSE), 
+    cols = starts_with(c("Manta_", "Wham_", "Scramble_"), ignore.case = FALSE), 
     names_to = "variable", 
     values_to = "count"
   ) %>%

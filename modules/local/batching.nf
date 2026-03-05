@@ -10,10 +10,14 @@ process BATCHING {
 
 
     input:
-    tuple val(cohort), path(evidence_qc_results), path(ped_file)
+    tuple val(cohort), path(passing_samples_metadata), path(ped_file)
 
     output:
-    tuple val(cohort), path("batching_out"), emit: batching_out
+    tuple val(cohort), path("batching_out/batching/batch_assignments.tsv"), emit: batch_assignments
+    tuple val(cohort), path("batching_out/batching/batching_metadata.tsv"), emit: batching_metadata
+    tuple val(cohort), path("batching_out/batching/metric_plots/*.png"), emit: metric_plots
+    tuple val(cohort), path("batching_out/batching/cluster_plots/*.png"), emit: cluster_plots
+    tuple val(cohort), path("batching_out/batching/pannelled_cluster_plots/*.png"), emit: panelled_cluster_plots
     path "versions.yml", emit: versions
 
     script:
@@ -24,14 +28,8 @@ process BATCHING {
     def batch_prefix = params.batching_batch_prefix ?: "${cohort}_batch_"
     def batch_suffix = params.batching_batch_suffix ?: ''
     """
-    pass_metadata=\$(find ${evidence_qc_results} -type f -name "passing_samples_metadata.tsv" | head -n 1)
-    if [[ -z "\${pass_metadata}" ]]; then
-        echo "ERROR: passing_samples_metadata.tsv not found under ${evidence_qc_results}" >&2
-        exit 1
-    fi
-
     python ${projectDir}/bin/Batching.py \\
-        --pass-metadata "\${pass_metadata}" \\
+        --pass-metadata "${passing_samples_metadata}" \\
         --include-metrics "${params.batching_include_metrics}" \\
         --include-bins "${include_bins}" \\
         --target-batch-size ${params.batching_target_batch_size} \\
@@ -51,12 +49,17 @@ process BATCHING {
 
     stub:
     """
-    mkdir -p batching_out/batching
+    mkdir -p batching_out/batching/metric_plots
+    mkdir -p batching_out/batching/cluster_plots
+    mkdir -p batching_out/batching/pannelled_cluster_plots
     touch batching_out/batching/batch_assignments.tsv
+    touch batching_out/batching/batching_metadata.tsv
+    touch batching_out/batching/metric_plots/${cohort}_distribution_1_batches.png
+    touch batching_out/batching/cluster_plots/${cohort}_distribution_1_batches.png
+    touch batching_out/batching/pannelled_cluster_plots/${cohort}_distribution_1_batches.png
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: "stub"
     END_VERSIONS
     """
 }
-
