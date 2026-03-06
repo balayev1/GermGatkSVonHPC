@@ -55,6 +55,8 @@ process GATKSV_FILTERBATCHSAMPLES {
         --static-json '${static_json}' \\
         --merge-json-file filter_batch_samples_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.filterbatchsamples_wdl} \\
         -i filter_batch_samples_inputs.json \\

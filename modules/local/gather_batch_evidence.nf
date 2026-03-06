@@ -7,20 +7,27 @@ process GATKSV_GATHERBATCHEVIDENCE {
     label 'process_medium'
 
     input:
-    tuple val(batch_name), val(cohort), path(ped_file), val(sample_ids), path(count_files), path(pe_files), path(sr_files), path(sd_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files), path(gcnv_model_tars), path(contig_ploidy_model_tar)
+    tuple val(batch_name), val(sample_ids), path(ped_file), path(count_files), path(pe_files), path(sr_files), path(sd_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files), path(gcnv_model_tars), path(contig_ploidy_model_tar)
 
     output:
-    tuple val(batch_name), path("gather_batch_evidence_results"), emit: gather_batch_evidence_results
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*.baf.txt.gz"), emit: merged_BAF
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*.sr.txt.gz"), emit: merged_SR
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*.pe.txt.gz"), emit: merged_PE
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*.rd.txt.gz"), emit: merged_bincov
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*dels*.bed.gz"), emit: merged_dels
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*dups*.bed.gz"), emit: merged_dups
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*median*cov*"), emit: median_cov
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*std*manta*vcf*tar*"), emit: std_manta_vcf_tar
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*std*wham*vcf*tar*"), emit: std_wham_vcf_tar
-    tuple val(batch_name), path("gather_batch_evidence_results/**/*std*scramble*vcf*tar*"), emit: std_scramble_vcf_tar
+    tuple val(batch_name), path("**/${batch_name}.baf.txt.gz"), emit: merged_BAF
+    tuple val(batch_name), path("**/${batch_name}.sr.txt.gz"), emit: merged_SR
+    tuple val(batch_name), path("**/${batch_name}.pe.txt.gz"), emit: merged_PE
+    tuple val(batch_name), path("**/${batch_name}.RD.txt.gz"), emit: merged_bincov
+    tuple val(batch_name), path("**/*.del.bed"), emit: merged_dels
+    tuple val(batch_name), path("**/*.dup.bed"), emit: merged_dups
+    tuple val(batch_name), path("**/*_medianCov.transposed.bed"), emit: median_cov
+    tuple val(batch_name), path("**/*.manta_std.tar.gz"), emit: std_manta_vcf_tar
+    tuple val(batch_name), path("**/*.wham_std.tar.gz"), emit: std_wham_vcf_tar
+    tuple val(batch_name), path("**/*.scramble_std.tar.gz"), emit: std_scramble_vcf_tar
+    tuple val(batch_name), path("**/${batch_name}_ploidy_matrix.bed.gz"), emit: batch_ploidy_matrix, optional: true
+    tuple val(batch_name), path("**/${batch_name}_ploidy_plots.tar.gz"), emit: batch_ploidy_plots, optional: true
+    tuple val(batch_name), path("**/${batch_name}.BAF.QC_matrix.txt"), emit: baf_qc_stats, optional: true
+    tuple val(batch_name), path("**/${batch_name}.RD.QC_matrix.txt"), emit: rd_qc_stats, optional: true
+    tuple val(batch_name), path("**/${batch_name}.PE.QC_matrix.txt"), emit: pe_qc_stats, optional: true
+    tuple val(batch_name), path("**/${batch_name}.SR.QC_matrix.txt"), emit: sr_qc_stats, optional: true
+    tuple val(batch_name), path("**/${batch_name}.00_matrix_FC_QC.png"), emit: plot_matrix_qc, optional: true
+    tuple val(batch_name), path("**/tloc_*.vcf.gz"), emit: manta_tloc, optional: true
     path "versions.yml", emit: versions
 
     script:
@@ -31,9 +38,8 @@ process GATKSV_GATHERBATCHEVIDENCE {
     if (!batch_id) {
         throw new IllegalArgumentException("GatherBatchEvidence batch name is required")
     }
-    def cohort_id = cohort?.toString()?.trim()
-    if (!cohort_id) {
-        throw new IllegalArgumentException("GatherBatchEvidence cohort is required")
+    if (!(batch_id ==~ /^[A-Za-z0-9_]+$/)) {
+        throw new IllegalArgumentException("GatherBatchEvidence batch '${batch_id}' is invalid. Batch IDs must contain only letters, numbers, and underscores.")
     }
 
     def asList = { value -> value instanceof List ? value : [value] }
@@ -93,6 +99,8 @@ process GATKSV_GATHERBATCHEVIDENCE {
         --static-json '${static_json}' \\
         --merge-json-file gather_batch_evidence_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+
     # Execute Cromwell
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.gbe_wdl} \\
@@ -113,16 +121,16 @@ process GATKSV_GATHERBATCHEVIDENCE {
     """
     mkdir -p gather_batch_evidence_results/call-stub/execution
     touch gather_batch_evidence_results/call-stub/.stub
-    touch gather_batch_evidence_results/call-stub/execution/merged.baf.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/merged.sr.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/merged.pe.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/merged.rd.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/merged.dels.bed.gz
-    touch gather_batch_evidence_results/call-stub/execution/merged.dups.bed.gz
-    touch gather_batch_evidence_results/call-stub/execution/median_cov.tsv
-    touch gather_batch_evidence_results/call-stub/execution/std.manta.vcf.tar.gz
-    touch gather_batch_evidence_results/call-stub/execution/std.wham.vcf.tar.gz
-    touch gather_batch_evidence_results/call-stub/execution/std.scramble.vcf.tar.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.baf.txt.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.sr.txt.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.pe.txt.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.RD.txt.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.del.bed
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.dup.bed
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}_medianCov.transposed.bed
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.manta_std.tar.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.wham_std.tar.gz
+    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.scramble_std.tar.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

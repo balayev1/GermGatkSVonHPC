@@ -5,19 +5,14 @@ import groovy.json.JsonOutput
 process GATKSV_EVIDENCEQC {
     tag "${cohort}"
     label 'process_medium'
-    
-    container "${workflow.containerEngine == 'singularity'
-        ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/e3/e3d753d93f57969fe76b8628a8dfcd23ef44bccd08c4ced7089c1f94bf47c89f/data'
-        : 'community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:d3becb6465454c35'}"
-
 
     input:
     tuple val(cohort), val(sample_ids), path(count_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files)
 
     output:
-    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/${cohort}.evidence_qc_table.tsv"), emit: evidence_qc_table
-    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/ploidy_est/sample_sex_assignments.txt.gz"), emit: sample_sex_assignments
-    tuple val(cohort), val(sample_ids), path("evidence_qc_results/**/passing_samples_metadata.tsv"), emit: passing_samples_metadata
+    tuple val(cohort), val(sample_ids), path("**/${cohort}.evidence_qc_table.tsv"), emit: evidence_qc_table
+    tuple val(cohort), val(sample_ids), path("**/ploidy_est/sample_sex_assignments.txt.gz"), emit: sample_sex_assignments
+    tuple val(cohort), val(sample_ids), path("**/passing_samples_metadata.tsv"), emit: passing_samples_metadata
     path "versions.yml", emit: versions
 
     script:

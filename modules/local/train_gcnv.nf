@@ -10,17 +10,17 @@ process GATK_TRAINGCNV {
     tuple val(cohort), val(sample_ids), path(count_files)  // (Mandatory!) channel: [cohort, sample_ids, count_files]
 
     output:
-    tuple val(cohort), path("**/${meta.cohort}-contig-ploidy-model.tar.gz"), emit: cohort_contig_ploidy_model_tar
-    tuple val(cohort), path("**/${meta.cohort}-gcnv-model-shard-*.tar.gz"), emit: cohort_gcnv_model_tars
-    tuple val(cohort), path("**/${meta.cohort}-contig-ploidy-calls.tar.gz"), emit: cohort_contig_ploidy_calls_tar
-    tuple val(cohort), path("**/${meta.cohort}-gcnv-calls-shard-*.tar.gz"), emit: cohort_gcnv_calls_tars
+    tuple val(cohort), path("**/${cohort}-contig-ploidy-model.tar.gz"), emit: cohort_contig_ploidy_model_tar
+    tuple val(cohort), path("**/${cohort}-gcnv-model-shard-*.tar.gz"), emit: cohort_gcnv_model_tars
+    tuple val(cohort), path("**/${cohort}-contig-ploidy-calls.tar.gz"), emit: cohort_contig_ploidy_calls_tar
+    tuple val(cohort), path("**/${cohort}-gcnv-calls-shard-*.tar.gz"), emit: cohort_gcnv_calls_tars
     tuple val(cohort), path("**/genotyped-segments-*.vcf.gz"), emit: cohort_genotyped_segments_vcfs
-    tuple val(cohort), path("**/${meta.cohort}-gcnv-tracking-shard*.tar.gz"), emit: cohort_gcnv_tracking_tars
+    tuple val(cohort), path("**/${cohort}-gcnv-tracking-shard*.tar.gz"), emit: cohort_gcnv_tracking_tars
     tuple val(cohort), path("**/genotyped-intervals-*.vcf.gz"), emit: cohort_genotyped_intervals_vcfs
     tuple val(cohort), path("**/denoised_copy_ratios-*.tsv"), emit: cohort_denoised_copy_ratios
-    tuple val(cohort), path("**/*.annotated.tsv"), emit: annotated_intervals, optional=true
-    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_cnv, optional=true
-    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_ploidy, optional=true
+    tuple val(cohort), path("**/*.annotated.tsv"), emit: annotated_intervals, optional: true
+    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_cnv, optional: true
+    tuple val(cohort), path("**/*.filtered.interval_list"), emit: filtered_intervals_ploidy, optional: true
     path "versions.yml", emit: versions
 
     script:
@@ -63,6 +63,8 @@ process GATK_TRAINGCNV {
         --out train_gcnv_inputs.json \\
         --static-json '${static_json}' \\
         --merge-json-file train_gcnv_dynamic.json
+
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
 
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.traingcnv_wdl} \\

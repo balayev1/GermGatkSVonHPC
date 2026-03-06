@@ -12,12 +12,12 @@ include { GATKSV_FILTERBATCHSAMPLES } from '../../modules/local/filter_batch_sam
 workflow BATCH_PROCESSING {
     take:
     train_gcnv_input  // channel: [ cohort_or_batch, sample_ids, count_files ]
-    batch_evidence_input
+    batch_evidence_input  // channel: [ batch, sample_ids, ped_file, counts, PE_files, SR_files, SD_files, *_vcfs ]
 
     main:
     versions = Channel.empty()
-    def gcnv_model_tars = Channel.empty()
-    def contig_ploidy_model_tar = Channel.empty()
+    gcnv_model_tars = Channel.empty()
+    contig_ploidy_model_tar = Channel.empty()
 
     if (params.run_train_gcnv) {
         GATK_TRAINGCNV (
@@ -28,25 +28,23 @@ workflow BATCH_PROCESSING {
         contig_ploidy_model_tar = GATK_TRAINGCNV.out.cohort_contig_ploidy_model_tar
     }
 
-    def gather_batch_evidence_results = Channel.empty()
-    def cluster_batch_results = Channel.empty()
-    def generate_batch_metrics_results = Channel.empty()
-    def generate_batch_metrics_metrics = Channel.empty()
-    def generate_batch_metrics_ploidy_table = Channel.empty()
-    def batch_cohort = Channel.empty()
-    def merged_PE = Channel.empty()
-    def merged_bincov = Channel.empty()
-    def merged_SR = Channel.empty()
-    def median_cov = Channel.empty()
-    def filter_batch_sites_results = Channel.empty()
-    def filter_batch_sites_cutoffs = Channel.empty()
-    def filter_batch_sites_sv_counts = Channel.empty()
-    def filter_batch_sites_sv_count_plots = Channel.empty()
-    def filter_batch_samples_results = Channel.empty()
-    def filtered_depth_vcf = Channel.empty()
-    def filtered_pesr_vcf = Channel.empty()
-    def outlier_samples_excluded_file = Channel.empty()
-    def filtered_batch_samples_file = Channel.empty()
+    generate_batch_metrics_results = Channel.empty()
+    generate_batch_metrics_metrics = Channel.empty()
+    generate_batch_metrics_ploidy_table = Channel.empty()
+    batch_cohort = Channel.empty()
+    merged_PE = Channel.empty()
+    merged_bincov = Channel.empty()
+    merged_SR = Channel.empty()
+    median_cov = Channel.empty()
+    filter_batch_sites_results = Channel.empty()
+    filter_batch_sites_cutoffs = Channel.empty()
+    filter_batch_sites_sv_counts = Channel.empty()
+    filter_batch_sites_sv_count_plots = Channel.empty()
+    filter_batch_samples_results = Channel.empty()
+    filtered_depth_vcf = Channel.empty()
+    filtered_pesr_vcf = Channel.empty()
+    outlier_samples_excluded_file = Channel.empty()
+    filtered_batch_samples_file = Channel.empty()
     if (params.run_gather_batch_evidence) {
         if (!params.run_train_gcnv) {
             throw new IllegalStateException("run_gather_batch_evidence=true requires run_train_gcnv=true because GatherBatchEvidence consumes TrainGCNV model outputs")
@@ -56,6 +54,14 @@ workflow BATCH_PROCESSING {
                 return []
             }
             value instanceof List ? value : [value]
+        }
+        def cohortFromBatchKey = { batch_key ->
+            def key = batch_key.toString()
+            def sep = '__'
+            if (!key.contains(sep)) {
+                throw new IllegalStateException("Batch key '${key}' does not contain expected '${sep}' separator")
+            }
+            key.split(sep, 2)[0]
         }
         def selectSinglePath = { value, label ->
             def candidates = asList(value).collect { file(it.toString()) }
@@ -70,19 +76,18 @@ workflow BATCH_PROCESSING {
         }
 
         batch_cohort = batch_evidence_input
-            .map { batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files ->
-                tuple(batch_key, cohort)
+            .map { batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files ->
+                tuple(batch_key, cohortFromBatchKey(batch_key))
             }
             .unique()
 
         batch_evidence_with_models = batch_evidence_input
             .join(gcnv_model_tars)
-            .map { batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, gcnv_model_tars ->
+            .map { batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, gcnv_model_tars_files ->
                 tuple(
                     batch_key,
-                    cohort,
-                    ped_file,
                     sample_ids,
+                    ped_file,
                     counts_files,
                     pe_files,
                     sr_files,
@@ -90,16 +95,15 @@ workflow BATCH_PROCESSING {
                     manta_files,
                     wham_files,
                     scramble_files,
-                    gcnv_model_tars
+                    gcnv_model_tars_files
                 )
             }
             .join(contig_ploidy_model_tar)
-            .map { batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, gcnv_model_tars, contig_ploidy_model_tar ->
+            .map { batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, gcnv_model_tars_files, contig_ploidy_model_tar_file ->
                 tuple(
                     batch_key,
-                    cohort,
-                    ped_file,
                     asList(sample_ids).collect { it.toString() },
+                    ped_file,
                     asList(counts_files),
                     asList(pe_files),
                     asList(sr_files),
@@ -107,8 +111,8 @@ workflow BATCH_PROCESSING {
                     asList(manta_files),
                     asList(wham_files),
                     asList(scramble_files),
-                    asList(gcnv_model_tars),
-                    contig_ploidy_model_tar
+                    asList(gcnv_model_tars_files),
+                    contig_ploidy_model_tar_file
                 )
             }
 
@@ -116,16 +120,16 @@ workflow BATCH_PROCESSING {
             batch_evidence_with_models
         )
         versions = versions.mix(GATKSV_GATHERBATCHEVIDENCE.out.versions)
-        gather_batch_evidence_results = GATKSV_GATHERBATCHEVIDENCE.out.gather_batch_evidence_results
         merged_PE = GATKSV_GATHERBATCHEVIDENCE.out.merged_PE
         merged_bincov = GATKSV_GATHERBATCHEVIDENCE.out.merged_bincov
         merged_SR = GATKSV_GATHERBATCHEVIDENCE.out.merged_SR
         median_cov = GATKSV_GATHERBATCHEVIDENCE.out.median_cov
 
         if (params.run_cluster_batch) {
+            def nIqrCutoffPlotting = params.cluster_n_iqr_cutoff_plotting
             ped_by_batch = batch_evidence_input
-                .map { batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files ->
-                    tuple(batch_key, cohort, ped_file)
+                .map { batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files ->
+                    tuple(batch_key, cohortFromBatchKey(batch_key), ped_file)
                 }
 
             cluster_batch_input = ped_by_batch
@@ -143,7 +147,8 @@ workflow BATCH_PROCESSING {
                         selectSinglePath(merged_dups, "merged_dups"),
                         selectSinglePath(std_wham_vcf_tar, "std_wham_vcf_tar"),
                         selectSinglePath(std_manta_vcf_tar, "std_manta_vcf_tar"),
-                        selectSinglePath(std_scramble_vcf_tar, "std_scramble_vcf_tar")
+                        selectSinglePath(std_scramble_vcf_tar, "std_scramble_vcf_tar"),
+                        nIqrCutoffPlotting
                     )
                 }
 
@@ -151,7 +156,6 @@ workflow BATCH_PROCESSING {
                 cluster_batch_input
             )
             versions = versions.mix(GATKSV_CLUSTERBATCH.out.versions)
-            cluster_batch_results = GATKSV_CLUSTERBATCH.out.cluster_batch_results
 
             if (params.run_generate_batch_metrics) {
                 generate_batch_metrics_input = ped_by_batch
@@ -164,16 +168,16 @@ workflow BATCH_PROCESSING {
                     .join(GATKSV_CLUSTERBATCH.out.clustered_manta_vcf)
                     .join(GATKSV_CLUSTERBATCH.out.clustered_wham_vcf)
                     .join(GATKSV_CLUSTERBATCH.out.clustered_scramble_vcf)
-                    .map { batch_key, cohort, ped_file, merged_pe, merged_baf, merged_bincov, merged_sr, median_cov, clustered_depth_vcf, clustered_manta_vcf, clustered_wham_vcf, clustered_scramble_vcf ->
+                    .map { batch_key, cohort, ped_file, merged_pe, merged_baf, merged_bincov_file, merged_sr, median_cov_file, clustered_depth_vcf, clustered_manta_vcf, clustered_wham_vcf, clustered_scramble_vcf ->
                         tuple(
                             batch_key,
                             cohort,
                             ped_file,
                             selectSinglePath(merged_pe, "merged_PE"),
                             selectSinglePath(merged_baf, "merged_BAF"),
-                            selectSinglePath(merged_bincov, "merged_bincov"),
+                            selectSinglePath(merged_bincov_file, "merged_bincov"),
                             selectSinglePath(merged_sr, "merged_SR"),
-                            selectSinglePath(median_cov, "median_cov"),
+                            selectSinglePath(median_cov_file, "median_cov"),
                             selectSinglePath(clustered_depth_vcf, "clustered_depth_vcf"),
                             selectSinglePath(clustered_manta_vcf, "clustered_manta_vcf"),
                             selectSinglePath(clustered_wham_vcf, "clustered_wham_vcf"),
@@ -253,8 +257,6 @@ workflow BATCH_PROCESSING {
 
     emit:
     versions
-    gather_batch_evidence_results
-    cluster_batch_results
     generate_batch_metrics_results
     generate_batch_metrics_metrics
     generate_batch_metrics_ploidy_table

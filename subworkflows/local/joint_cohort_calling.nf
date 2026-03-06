@@ -20,12 +20,12 @@ workflow JOINT_COHORT_CALLING {
     main:
     versions = Channel.empty()
 
-    def merge_batch_sites_results = Channel.empty()
-    def cohort_pesr_vcf = Channel.empty()
-    def cohort_depth_vcf = Channel.empty()
-    def merge_batch_sites_vcf = Channel.empty()
-    def genotype_batch_results = Channel.empty()
-    def genotyped_vcf = Channel.empty()
+    merge_batch_sites_results = Channel.empty()
+    cohort_pesr_vcf = Channel.empty()
+    cohort_depth_vcf = Channel.empty()
+    merge_batch_sites_vcf = Channel.empty()
+    genotype_batch_results = Channel.empty()
+    genotyped_vcf = Channel.empty()
 
     def asList = { value ->
         if (value == null) {

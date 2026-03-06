@@ -1,0 +1,28 @@
+Mar-05 17:08:02.687 [main] DEBUG nextflow.cli.Launcher - $> nextflow run main.nf -stub-run -process.executor local -ansi-log false
+Mar-05 17:08:02.719 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 25.10.4
+Mar-05 17:08:02.731 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/Users/agshinbalayev/.nextflow/plugins; core-plugins: nf-amazon@3.4.4,nf-azure@1.20.2,nf-cloudcache@0.5.0,nf-codecommit@0.5.0,nf-console@1.3.0,nf-google@1.23.5,nf-k8s@1.2.2,nf-tower@1.17.5,nf-wave@1.16.1
+Mar-05 17:08:02.736 [main] DEBUG nextflow.extension.FilesEx - Failed to create directory '/Users/agshinbalayev/.nextflow/plugins'
+java.nio.file.FileSystemException: /Users/agshinbalayev/.nextflow/plugins: Operation not permitted
+	at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:100)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+	at java.base/sun.nio.fs.UnixFileSystemProvider.createDirectory(UnixFileSystemProvider.java:418)
+	at java.base/java.nio.file.Files.createDirectory(Files.java:647)
+	at java.base/java.nio.file.Files.createAndCheckIsDirectory(Files.java:734)
+	at java.base/java.nio.file.Files.createDirectories(Files.java:720)
+	at org.codehaus.groovy.vmplugin.v8.IndyInterface.fromCache(IndyInterface.java:321)
+	at nextflow.extension.FilesEx.mkdirs(FilesEx.groovy:493)
+	at nextflow.plugin.PluginsFacade.init(PluginsFacade.groovy:258)
+	at nextflow.plugin.Plugins.init(Plugins.groovy:39)
+	at nextflow.plugin.Plugins.init(Plugins.groovy)
+	at nextflow.cli.CmdRun.run(CmdRun.groovy:326)
+	at nextflow.cli.Launcher.run(Launcher.groovy:515)
+	at nextflow.cli.Launcher.main(Launcher.groovy:675)
+Mar-05 17:08:02.737 [main] ERROR nextflow.cli.Launcher - Unable to create plugins dir: /Users/agshinbalayev/.nextflow/plugins
+java.io.IOException: Unable to create plugins dir: /Users/agshinbalayev/.nextflow/plugins
+	at nextflow.plugin.PluginsFacade.init(PluginsFacade.groovy:259)
+	at nextflow.plugin.Plugins.init(Plugins.groovy:39)
+	at nextflow.plugin.Plugins.init(Plugins.groovy)
+	at nextflow.cli.CmdRun.run(CmdRun.groovy:326)
+	at nextflow.cli.Launcher.run(Launcher.groovy:515)
+	at nextflow.cli.Launcher.main(Launcher.groovy:675)

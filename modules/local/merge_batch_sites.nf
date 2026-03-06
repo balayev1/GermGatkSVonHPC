@@ -56,6 +56,8 @@ process GATKSV_MERGEBATCHSITES {
         --static-json '${static_json}' \\
         --merge-json-file merge_batch_sites_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.mergebatchsites_wdl} \\
         -i merge_batch_sites_inputs.json \\

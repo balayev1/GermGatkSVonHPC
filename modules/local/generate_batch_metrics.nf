@@ -59,6 +59,8 @@ process GATKSV_GENERATEBATCHMETRICS {
         --static-json '${static_json}' \\
         --merge-json-file generate_batch_metrics_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.generatebatchmetrics_wdl} \\
         -i generate_batch_metrics_inputs.json \\

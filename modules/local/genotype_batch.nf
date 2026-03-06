@@ -54,6 +54,8 @@ process GATKSV_GENOTYPEBATCH {
         --static-json '${static_json}' \\
         --merge-json-file genotype_batch_dynamic.json
 
+    unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
+
     java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
         run ${params.genotypebatch_wdl} \\
         -i genotype_batch_inputs.json \\

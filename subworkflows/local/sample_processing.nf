@@ -58,7 +58,7 @@ workflow SAMPLE_PROCESSING {
 
     GATK_UPDATEVCFSEQUENCEDICTIONARY (
         BCFTOOLS_ANNOTATE.out.vcf,
-        ch_reference_dict.first()
+        ch_reference_dict
     )
     versions = versions.mix(GATK_UPDATEVCFSEQUENCEDICTIONARY.out.versions)
 
@@ -105,16 +105,15 @@ workflow SAMPLE_PROCESSING {
         .join(keyedEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.wham_vcf))
         .join(keyedEvidence(GATKSV_GATHERSAMPLEEVIDENCE.out.scramble_vcf))
         .map { _sample_key, meta, counts_file, manta_file, wham_file, scramble_file -> tuple(meta, counts_file, manta_file, wham_file, scramble_file) }
-    gse_outfiles.into { gse_for_evidqc; gse_for_traingcnv; gse_for_batch_processing }
 
-    evidqc_input = gse_for_evidqc
+    evidqc_input = gse_outfiles
         .map { meta, counts_file, manta_file, wham_file, scramble_file -> tuple(meta.cohort, meta.id, counts_file, manta_file, wham_file, scramble_file) }
         .groupTuple()
 
-    counts_by_sample = gse_for_traingcnv
+    counts_by_sample = gse_outfiles
         .map { meta, counts_file, _manta_file, _wham_file, _scramble_file -> tuple(meta.cohort.toString(), meta.batch.toString(), meta.id.toString(), counts_file) }
 
-    evidence_by_sample_keyed = gse_for_batch_processing
+    evidence_by_sample_keyed = gse_outfiles
         .map { meta, counts_file, manta_file, wham_file, scramble_file ->
             tuple(sampleKeyForMeta(meta), meta.cohort.toString(), meta.batch.toString(), meta.id.toString(), counts_file, manta_file, wham_file, scramble_file)
         }
@@ -172,8 +171,8 @@ workflow SAMPLE_PROCESSING {
     counts_by_sample_keyed = counts_by_sample
         .map { cohort, batch, sample_id, counts_file -> tuple("${cohort}::${sample_id}", cohort, batch, sample_id, counts_file) }
 
-    def train_gcnv_input
-    def model_batch_assignments_keyed
+    train_gcnv_input = Channel.empty()
+    model_batch_assignments_keyed = Channel.empty()
     if (params.run_batching) {
         batching_input = passing_samples_metadata
             .map { cohort, sample_ids, passing_samples_metadata_file -> tuple(cohort, passing_samples_metadata_file) }
@@ -246,7 +245,7 @@ workflow SAMPLE_PROCESSING {
         }
         .join(ped_by_cohort)
         .map { cohort, batch_key, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, ped_file ->
-            tuple(batch_key, cohort, ped_file, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
+            tuple(batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
         }
 
     emit:
