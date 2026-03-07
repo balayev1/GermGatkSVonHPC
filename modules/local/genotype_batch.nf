@@ -10,8 +10,12 @@ process GATKSV_GENOTYPEBATCH {
     tuple val(batch_name), val(cohort), path(rf_cutoffs), path(pe_file), path(rd_file), path(sr_file), path(median_coverage), path(ploidy_table), path(vcf)
 
     output:
-    tuple val(batch_name), path("genotype_batch_results"), emit: genotype_batch_results
-    tuple val(batch_name), path("genotype_batch_results/exposed/genotyped.vcf*"), emit: genotyped_vcf, optional: true
+    tuple val(batch_name), path("**/*.genotype_batch.depth.vcf.gz"), emit: genotyped_depth_vcf
+    tuple val(batch_name), path("**/*.genotype_batch.pesr.vcf.gz"), emit: genotyped_pesr_vcf
+    tuple val(batch_name), path("**/*.rd_geno_params.tsv"), emit: genotyping_rd_table
+    tuple val(batch_name), path("**/*.pe_geno_params.tsv"), emit: genotyping_pe_table
+    tuple val(batch_name), path("**/*.sr_geno_params.tsv"), emit: genotyping_sr_table
+    tuple val(batch_name), path("**/*.regeno_coverage_medians.tsv.gz"), emit: regeno_coverage_medians
     path "versions.yml", emit: versions
 
     script:
@@ -61,18 +65,6 @@ process GATKSV_GENOTYPEBATCH {
         -i genotype_batch_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p genotype_batch_results
-    cp genotype_batch_inputs.json genotype_batch_results/
-    find cromwell-executions/GenotypeBatch/ -name "call-*" -type d -exec cp -r {} genotype_batch_results/ \\;
-
-    mkdir -p genotype_batch_results/exposed
-    genotyped_vcf=\$(find genotype_batch_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "genotyp|batch|cohort" | head -n 1 || true)
-    if [[ -n "\${genotyped_vcf}" ]]; then
-        suffix=".vcf"
-        [[ "\${genotyped_vcf}" == *.vcf.gz ]] && suffix=".vcf.gz"
-        cp "\${genotyped_vcf}" "genotype_batch_results/exposed/genotyped\${suffix}"
-    fi
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -81,10 +73,14 @@ process GATKSV_GENOTYPEBATCH {
 
     stub:
     """
-    mkdir -p genotype_batch_results/call-stub
-    mkdir -p genotype_batch_results/exposed
-    touch genotype_batch_results/call-stub/.stub
-    touch genotype_batch_results/exposed/genotyped.vcf.gz
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${batch_name}.genotype_batch.depth.vcf.gz
+    touch ${batch_name}.genotype_batch.pesr.vcf.gz
+    touch ${batch_name}.rd_geno_params.tsv
+    touch ${batch_name}.pe_geno_params.tsv
+    touch ${batch_name}.sr_geno_params.tsv
+    touch ${batch_name}.regeno_coverage_medians.tsv.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

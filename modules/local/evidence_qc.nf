@@ -70,9 +70,7 @@ process GATKSV_EVIDENCEQC {
         -i evidence_qc_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p evidence_qc_results
-    cp evidence_qc_inputs.json evidence_qc_results/
-    find cromwell-executions/EvidenceQC/ -name "call-*" -type d -exec cp -r {} evidence_qc_results/ \\;
+    find cromwell-executions/EvidenceQC/* -type d -name 'tmpVcfs' -exec rm -rf {} +
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -82,12 +80,12 @@ process GATKSV_EVIDENCEQC {
 
     stub:
     """
-    mkdir -p evidence_qc_results/call-stub
-    mkdir -p evidence_qc_results/ploidy_est
-    touch evidence_qc_results/call-stub/.stub
-    touch evidence_qc_results/${cohort}.evidence_qc_table.tsv
-    touch evidence_qc_results/ploidy_est/sample_sex_assignments.txt.gz
-    touch evidence_qc_results/passing_samples_metadata.tsv
+    mkdir -p call-stub
+    mkdir -p ploidy_est
+    touch call-stub/.stub
+    touch ${cohort}.evidence_qc_table.tsv
+    touch ploidy_est/sample_sex_assignments.txt.gz
+    touch passing_samples_metadata.tsv
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -71,42 +71,6 @@ process GATKSV_CLUSTERBATCH {
         -i cluster_batch_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p cluster_batch_results
-    cp cluster_batch_inputs.json cluster_batch_results/
-    find cromwell-executions/ClusterBatch/ -name "call-*" -type d -exec cp -r {} cluster_batch_results/ \\;
-    mkdir -p cluster_batch_results/exposed_vcfs
-
-    choose_and_copy_vcf() {
-        local label="\$1"
-        local regex="\$2"
-        local chosen
-        chosen=\$(find cluster_batch_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "\${regex}" | head -n 1 || true)
-        if [[ -n "\${chosen}" ]]; then
-            local suffix=".vcf"
-            if [[ "\${chosen}" == *.vcf.gz ]]; then
-                suffix=".vcf.gz"
-            fi
-            cp "\${chosen}" "cluster_batch_results/exposed_vcfs/clustered_\${label}\${suffix}"
-        fi
-    }
-
-    choose_and_copy_vcf depth "depth|cnmops|gcnv"
-    choose_and_copy_vcf manta "manta"
-    choose_and_copy_vcf wham "wham"
-    choose_and_copy_vcf scramble "scramble"
-
-    for required_caller in depth manta wham scramble; do
-        if ! ls cluster_batch_results/exposed_vcfs/clustered_\${required_caller}.vcf* >/dev/null 2>&1; then
-            echo "ERROR: ClusterBatch could not resolve clustered_\${required_caller}.vcf output" >&2
-            exit 1
-        fi
-    done
-
-    preview_file=\$(find cluster_batch_results -type f -name "*.outliers_preview.samples.txt" | head -n 1 || true)
-    if [[ -n "\${preview_file}" ]]; then
-        grep -Ev '^[[:space:]]*\$' "\${preview_file}" | wc -l | awk '{print \$1}' > num_outliers.txt
-    fi
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -115,14 +79,12 @@ process GATKSV_CLUSTERBATCH {
 
     stub:
     """
-    mkdir -p cluster_batch_results/call-stub
-    mkdir -p cluster_batch_results/exposed_vcfs
-    touch cluster_batch_results/call-stub/.stub
-    touch cluster_batch_results/exposed_vcfs/clustered_depth.vcf.gz
-    touch cluster_batch_results/exposed_vcfs/clustered_manta.vcf.gz
-    touch cluster_batch_results/exposed_vcfs/clustered_wham.vcf.gz
-    touch cluster_batch_results/exposed_vcfs/clustered_scramble.vcf.gz
-    echo 0 > num_outliers.txt
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${batch_name}.cluster_batch.depth.vcf.gz
+    touch ${batch_name}.cluster_batch.manta.vcf.gz
+    touch ${batch_name}.cluster_batch.wham.vcf.gz
+    touch ${batch_name}.cluster_batch.scramble.vcf.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

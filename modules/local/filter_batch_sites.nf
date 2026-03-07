@@ -10,14 +10,18 @@ process GATKSV_FILTERBATCHSITES {
     tuple val(batch_name), val(cohort), path(depth_vcf), path(manta_vcf), path(wham_vcf), path(scramble_vcf), path(evidence_metrics)
 
     output:
-    tuple val(batch_name), path("filter_batch_sites_results"), emit: filter_batch_sites_results
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/cutoffs.tsv"), emit: cutoffs
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sv_counts/*.tsv"), emit: sv_counts
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sv_count_plots/*"), emit: sv_count_plots
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sites_filtered_depth.vcf*"), emit: sites_filtered_depth_vcf
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sites_filtered_manta.vcf*"), emit: sites_filtered_manta_vcf
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sites_filtered_wham.vcf*"), emit: sites_filtered_wham_vcf
-    tuple val(batch_name), path("filter_batch_sites_results/exposed/sites_filtered_scramble.vcf*"), emit: sites_filtered_scramble_vcf
+    tuple val(batch_name), path("**/*.depth.with_evidence.vcf.gz"), emit: sites_filtered_depth_vcf
+    tuple val(batch_name), path("**/*.manta.with_evidence.vcf.gz"), emit: sites_filtered_manta_vcf
+    tuple val(batch_name), path("**/*.scramble.with_evidence.vcf.gz"), emit: sites_filtered_scramble_vcf
+    tuple val(batch_name), path("**/*.wham.with_evidence.vcf.gz"), emit: sites_filtered_wham_vcf
+    tuple val(batch_name), path("**/${batch_name}.cutoffs"), emit: cutoffs
+    tuple val(batch_name), path("**/${batch_name}.scores"), emit: scores
+    tuple val(batch_name), path("**/${batch_name}.RF_intermediate_files.tar.gz"), emit: rf_intermediates
+    tuple val(batch_name), path("**/*.svcounts.txt"), emit: sv_counts
+    tuple val(batch_name), path("**/*.all_SVTYPEs.counts_per_sample.png"), emit: sv_count_plots
+    tuple val(batch_name), path("**/*.outliers_preview.samples.txt"), emit: outlier_samples_preview
+    tuple val(batch_name), path("**/*.outliers_preview_with_reason.samples.tsv"), emit: outlier_samples_with_reason
+    tuple val(batch_name), path("num_outliers.txt"), emit: num_outlier_samples
     path "versions.yml", emit: versions
 
     script:
@@ -65,56 +69,6 @@ process GATKSV_FILTERBATCHSITES {
         -i filter_batch_sites_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p filter_batch_sites_results
-    cp filter_batch_sites_inputs.json filter_batch_sites_results/
-    find cromwell-executions/FilterBatchSites/ -name "call-*" -type d -exec cp -r {} filter_batch_sites_results/ \\;
-
-    mkdir -p filter_batch_sites_results/exposed/sv_counts
-    mkdir -p filter_batch_sites_results/exposed/sv_count_plots
-
-    cutoff_file=\$(find filter_batch_sites_results -type f -name "*.tsv" | grep -E -i "cutoff" | head -n 1 || true)
-    if [[ -z "\${cutoff_file}" ]]; then
-        echo "ERROR: FilterBatchSites could not resolve cutoffs output" >&2
-        exit 1
-    fi
-    cp "\${cutoff_file}" filter_batch_sites_results/exposed/cutoffs.tsv
-
-    count_files=\$(find filter_batch_sites_results -type f -name "*.tsv" | grep -E -i "count" || true)
-    if [[ -z "\${count_files}" ]]; then
-        echo "ERROR: FilterBatchSites could not resolve sv_counts outputs" >&2
-        exit 1
-    fi
-    while IFS= read -r count_file; do
-        [[ -n "\${count_file}" ]] && cp "\${count_file}" "filter_batch_sites_results/exposed/sv_counts/\$(basename "\${count_file}")"
-    done <<< "\${count_files}"
-
-    plot_files=\$(find filter_batch_sites_results -type f \\( -name "*.png" -o -name "*.pdf" \\) | grep -E -i "count|sv" || true)
-    if [[ -z "\${plot_files}" ]]; then
-        echo "ERROR: FilterBatchSites could not resolve sv_count_plots outputs" >&2
-        exit 1
-    fi
-    while IFS= read -r plot_file; do
-        [[ -n "\${plot_file}" ]] && cp "\${plot_file}" "filter_batch_sites_results/exposed/sv_count_plots/\$(basename "\${plot_file}")"
-    done <<< "\${plot_files}"
-
-    copy_sites_filtered_vcf() {
-        local label="\$1"
-        local candidate
-        candidate=\$(find filter_batch_sites_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "\${label}" | grep -E -i "sites[_-]?filtered|site[_-]?filtered|filtered" | head -n 1 || true)
-        if [[ -z "\${candidate}" ]]; then
-            echo "ERROR: FilterBatchSites could not resolve sites_filtered_\${label}.vcf output" >&2
-            exit 1
-        fi
-        local suffix=".vcf"
-        [[ "\${candidate}" == *.vcf.gz ]] && suffix=".vcf.gz"
-        cp "\${candidate}" "filter_batch_sites_results/exposed/sites_filtered_\${label}\${suffix}"
-    }
-
-    copy_sites_filtered_vcf depth
-    copy_sites_filtered_vcf manta
-    copy_sites_filtered_vcf wham
-    copy_sites_filtered_vcf scramble
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -123,17 +77,20 @@ process GATKSV_FILTERBATCHSITES {
 
     stub:
     """
-    mkdir -p filter_batch_sites_results/call-stub
-    mkdir -p filter_batch_sites_results/exposed/sv_counts
-    mkdir -p filter_batch_sites_results/exposed/sv_count_plots
-    touch filter_batch_sites_results/call-stub/.stub
-    touch filter_batch_sites_results/exposed/cutoffs.tsv
-    touch filter_batch_sites_results/exposed/sv_counts/depth.counts.tsv
-    touch filter_batch_sites_results/exposed/sv_count_plots/depth.counts.png
-    touch filter_batch_sites_results/exposed/sites_filtered_depth.vcf.gz
-    touch filter_batch_sites_results/exposed/sites_filtered_manta.vcf.gz
-    touch filter_batch_sites_results/exposed/sites_filtered_wham.vcf.gz
-    touch filter_batch_sites_results/exposed/sites_filtered_scramble.vcf.gz
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${batch_name}.depth.with_evidence.vcf.gz
+    touch ${batch_name}.manta.with_evidence.vcf.gz
+    touch ${batch_name}.scramble.with_evidence.vcf.gz
+    touch ${batch_name}.wham.with_evidence.vcf.gz
+    touch ${batch_name}.cutoffs
+    touch ${batch_name}.scores
+    touch ${batch_name}.RF_intermediate_files.tar.gz
+    touch ${batch_name}.svcounts.txt
+    touch ${batch_name}.all_SVTYPEs.counts_per_sample.png
+    touch ${batch_name}.outliers_preview.samples.txt
+    touch ${batch_name}.outliers_preview_with_reason.samples.tsv
+    touch num_outliers.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

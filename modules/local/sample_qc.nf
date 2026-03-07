@@ -10,8 +10,8 @@ process SAMPLE_QC {
     tuple val(cohort), val(sample_ids), path(insert_size_metrics), path(ped_file), path(evidence_qc_table), path(sample_sex_assignments)
 
     output:
-    path("*.pdf"), emit: sample_qc_plots
-    path("*.tsv"), emit: sample_qc_reports
+    tuple val(cohort), path("*.pdf"), emit: sample_qc_plots
+    tuple val(cohort), path("*.tsv"), emit: sample_qc_reports
     path "versions.yml", emit: versions
 
     script:
@@ -50,6 +50,7 @@ process SAMPLE_QC {
     """
     touch WGD_Score_Distribution.pdf
     touch Excluded_Samples_Report.tsv
+    touch Excluded_Sample_ID_only.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         R: "stub"

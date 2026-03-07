@@ -20,12 +20,13 @@ workflow JOINT_COHORT_CALLING {
     main:
     versions = Channel.empty()
 
-    merge_batch_sites_results = Channel.empty()
-    cohort_pesr_vcf = Channel.empty()
-    cohort_depth_vcf = Channel.empty()
     merge_batch_sites_vcf = Channel.empty()
-    genotype_batch_results = Channel.empty()
-    genotyped_vcf = Channel.empty()
+    genotyped_depth_vcf = Channel.empty()
+    genotyped_pesr_vcf = Channel.empty()
+    genotyping_rd_table = Channel.empty()
+    genotyping_pe_table = Channel.empty()
+    genotyping_sr_table = Channel.empty()
+    regeno_coverage_medians = Channel.empty()
 
     def asList = { value ->
         if (value == null) {
@@ -67,9 +68,6 @@ workflow JOINT_COHORT_CALLING {
             merge_batch_sites_input
         )
         versions = versions.mix(GATKSV_MERGEBATCHSITES.out.versions)
-        merge_batch_sites_results = GATKSV_MERGEBATCHSITES.out.merge_batch_sites_results
-        cohort_pesr_vcf = GATKSV_MERGEBATCHSITES.out.cohort_pesr_vcf
-        cohort_depth_vcf = GATKSV_MERGEBATCHSITES.out.cohort_depth_vcf
         merge_batch_sites_vcf = GATKSV_MERGEBATCHSITES.out.merge_batch_sites_vcf
 
         if (params.run_genotype_batch) {
@@ -92,7 +90,7 @@ workflow JOINT_COHORT_CALLING {
                         selectSinglePath(ploidy_table_file, "ploidy_table")
                     )
                 }
-                .join(GATKSV_MERGEBATCHSITES.out.merge_batch_sites_vcf)
+                .join(merge_batch_sites_vcf)
                 .map { cohort, batch_key, cutoffs_file, merged_pe, merged_bincov_file, merged_sr_file, median_cov_file, ploidy_table_file, merged_sites_vcf ->
                     tuple(
                         batch_key,
@@ -111,17 +109,22 @@ workflow JOINT_COHORT_CALLING {
                 genotype_batch_per_batch
             )
             versions = versions.mix(GATKSV_GENOTYPEBATCH.out.versions)
-            genotype_batch_results = GATKSV_GENOTYPEBATCH.out.genotype_batch_results
-            genotyped_vcf = GATKSV_GENOTYPEBATCH.out.genotyped_vcf
+            genotyped_depth_vcf = GATKSV_GENOTYPEBATCH.out.genotyped_depth_vcf
+            genotyped_pesr_vcf = GATKSV_GENOTYPEBATCH.out.genotyped_pesr_vcf
+            genotyping_rd_table = GATKSV_GENOTYPEBATCH.out.genotyping_rd_table
+            genotyping_pe_table = GATKSV_GENOTYPEBATCH.out.genotyping_pe_table
+            genotyping_sr_table = GATKSV_GENOTYPEBATCH.out.genotyping_sr_table
+            regeno_coverage_medians = GATKSV_GENOTYPEBATCH.out.regeno_coverage_medians
         }
     }
 
     emit:
     versions
-    merge_batch_sites_results
-    cohort_pesr_vcf
-    cohort_depth_vcf
     merge_batch_sites_vcf
-    genotype_batch_results
-    genotyped_vcf
+    genotyped_depth_vcf
+    genotyped_pesr_vcf
+    genotyping_rd_table
+    genotyping_pe_table
+    genotyping_sr_table
+    regeno_coverage_medians
 }

@@ -10,11 +10,10 @@ process GATKSV_FILTERBATCHSAMPLES {
     tuple val(batch_name), val(cohort), path(depth_vcf), path(manta_vcf), path(wham_vcf), path(scramble_vcf), path(outlier_cutoff_table)
 
     output:
-    tuple val(batch_name), path("filter_batch_samples_results"), emit: filter_batch_samples_results
-    tuple val(batch_name), path("filter_batch_samples_results/exposed/filtered_depth.vcf*"), emit: filtered_depth_vcf
-    tuple val(batch_name), path("filter_batch_samples_results/exposed/filtered_pesr.vcf*"), emit: filtered_pesr_vcf
-    tuple val(batch_name), path("filter_batch_samples_results/exposed/outlier_samples_excluded.txt"), emit: outlier_samples_excluded_file
-    tuple val(batch_name), path("filter_batch_samples_results/exposed/filtered_batch_samples.txt"), emit: filtered_batch_samples_file
+    tuple val(batch_name), path("**/*.depth.outliers_removed.vcf*"), emit: filtered_depth_vcf
+    tuple val(batch_name), path("**/*.filtered_pesr_merged.vcf*"), emit: filtered_pesr_vcf
+    tuple val(batch_name), path("**/*.outliers.samples.list"), emit: outlier_samples_excluded_file
+    tuple val(batch_name), path("**/*.outliers_excluded.samples.list"), emit: filtered_batch_samples_file
     path "versions.yml", emit: versions
 
     script:
@@ -62,36 +61,6 @@ process GATKSV_FILTERBATCHSAMPLES {
         -i filter_batch_samples_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p filter_batch_samples_results
-    cp filter_batch_samples_inputs.json filter_batch_samples_results/
-    find cromwell-executions/FilterBatchSamples/ -name "call-*" -type d -exec cp -r {} filter_batch_samples_results/ \\;
-
-    mkdir -p filter_batch_samples_results/exposed
-
-    depth_candidate=\$(find filter_batch_samples_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "depth" | grep -E -i "filtered" | head -n 1 || true)
-    pesr_candidate=\$(find filter_batch_samples_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "pesr" | grep -E -i "filtered" | head -n 1 || true)
-    if [[ -z "\${pesr_candidate}" ]]; then
-        pesr_candidate=\$(find filter_batch_samples_results -type f \\( -name "*.vcf.gz" -o -name "*.vcf" \\) | grep -E -i "manta|wham|scramble" | grep -E -i "filtered" | head -n 1 || true)
-    fi
-
-    outlier_file=\$(find filter_batch_samples_results -type f \\( -name "*.txt" -o -name "*.tsv" \\) | grep -E -i "outlier.*excluded|excluded.*outlier" | head -n 1 || true)
-    filtered_batch_file=\$(find filter_batch_samples_results -type f \\( -name "*.txt" -o -name "*.tsv" \\) | grep -E -i "filtered.*batch.*samples|batch.*samples.*filtered|remaining.*samples" | head -n 1 || true)
-
-    if [[ -z "\${depth_candidate}" || -z "\${pesr_candidate}" || -z "\${outlier_file}" || -z "\${filtered_batch_file}" ]]; then
-        echo "ERROR: FilterBatchSamples could not resolve one or more required outputs" >&2
-        exit 1
-    fi
-
-    depth_suffix=".vcf"
-    [[ "\${depth_candidate}" == *.vcf.gz ]] && depth_suffix=".vcf.gz"
-    pesr_suffix=".vcf"
-    [[ "\${pesr_candidate}" == *.vcf.gz ]] && pesr_suffix=".vcf.gz"
-
-    cp "\${depth_candidate}" "filter_batch_samples_results/exposed/filtered_depth\${depth_suffix}"
-    cp "\${pesr_candidate}" "filter_batch_samples_results/exposed/filtered_pesr\${pesr_suffix}"
-    cp "\${outlier_file}" filter_batch_samples_results/exposed/outlier_samples_excluded.txt
-    cp "\${filtered_batch_file}" filter_batch_samples_results/exposed/filtered_batch_samples.txt
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -100,13 +69,12 @@ process GATKSV_FILTERBATCHSAMPLES {
 
     stub:
     """
-    mkdir -p filter_batch_samples_results/call-stub
-    mkdir -p filter_batch_samples_results/exposed
-    touch filter_batch_samples_results/call-stub/.stub
-    touch filter_batch_samples_results/exposed/filtered_depth.vcf.gz
-    touch filter_batch_samples_results/exposed/filtered_pesr.vcf.gz
-    touch filter_batch_samples_results/exposed/outlier_samples_excluded.txt
-    touch filter_batch_samples_results/exposed/filtered_batch_samples.txt
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${batch_name}.depth.outliers_removed.vcf.gz
+    touch ${batch_name}.filtered_pesr_merged.vcf.gz
+    touch ${batch_name}.outliers.samples.list
+    touch ${batch_name}.outliers_excluded.samples.list
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

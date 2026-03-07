@@ -7,12 +7,11 @@ process GATKSV_GENERATEBATCHMETRICS {
     label 'process_medium'
 
     input:
-    tuple val(batch_name), val(cohort), path(ped_file), path(pe_file), path(baf_file), path(rd_file), path(sr_file), path(median_file), path(clustered_depth_vcf), path(clustered_manta_vcf), path(clustered_wham_vcf), path(clustered_scramble_vcf)
+    tuple val(batch_name), path(ped_file), path(pe_file), path(baf_file), path(rd_file), path(sr_file), path(median_file), path(clustered_depth_vcf), path(clustered_manta_vcf), path(clustered_wham_vcf), path(clustered_scramble_vcf), val(outlier_sample_ids)
 
     output:
-    tuple val(batch_name), path("generate_batch_metrics_results"), emit: generate_batch_metrics_results
-    tuple val(batch_name), path("generate_batch_metrics_results/exposed/metrics.tsv"), emit: metrics
-    tuple val(batch_name), path("generate_batch_metrics_results/exposed/ploidy_table.tsv"), emit: ploidy_table
+    tuple val(batch_name), path("**/*.metrics.tsv"), emit: metrics
+    tuple val(batch_name), path("**/${batch_name}.ploidy*.tsv"), emit: ploidy_table
     path "versions.yml", emit: versions
 
     script:
@@ -23,11 +22,6 @@ process GATKSV_GENERATEBATCHMETRICS {
     if (!batch_id) {
         throw new IllegalArgumentException("GenerateBatchMetrics batch name is required")
     }
-    def cohort_id = cohort?.toString()?.trim()
-    if (!cohort_id) {
-        throw new IllegalArgumentException("GenerateBatchMetrics cohort is required")
-    }
-
     def dynamic = [
         "GenerateBatchMetrics.batch"       : batch_id,
         "GenerateBatchMetrics.ped_file"    : ped_file.toRealPath().toString(),
@@ -41,6 +35,9 @@ process GATKSV_GENERATEBATCHMETRICS {
         "GenerateBatchMetrics.wham_vcf"    : clustered_wham_vcf.toRealPath().toString(),
         "GenerateBatchMetrics.scramble_vcf": clustered_scramble_vcf.toRealPath().toString()
     ]
+    if (outlier_sample_ids != null && outlier_sample_ids.toString().trim()) {
+        dynamic["GenerateBatchMetrics.outlier_sample_ids"] = file(outlier_sample_ids.toString()).toRealPath().toString()
+    }
 
     file("generate_batch_metrics_dynamic.json").text = JsonOutput.prettyPrint(JsonOutput.toJson(dynamic))
 
@@ -66,22 +63,6 @@ process GATKSV_GENERATEBATCHMETRICS {
         -i generate_batch_metrics_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p generate_batch_metrics_results
-    cp generate_batch_metrics_inputs.json generate_batch_metrics_results/
-    find cromwell-executions/GenerateBatchMetrics/ -name "call-*" -type d -exec cp -r {} generate_batch_metrics_results/ \\;
-    mkdir -p generate_batch_metrics_results/exposed
-
-    metrics_file=\$(find generate_batch_metrics_results -type f -name "*.tsv" | grep -E -i "metrics" | head -n 1 || true)
-    ploidy_file=\$(find generate_batch_metrics_results -type f -name "*.tsv" | grep -E -i "ploidy.*table|table.*ploidy" | head -n 1 || true)
-
-    if [[ -z "\${metrics_file}" || -z "\${ploidy_file}" ]]; then
-        echo "ERROR: GenerateBatchMetrics could not resolve metrics/ploidy_table outputs" >&2
-        exit 1
-    fi
-
-    cp "\${metrics_file}" generate_batch_metrics_results/exposed/metrics.tsv
-    cp "\${ploidy_file}" generate_batch_metrics_results/exposed/ploidy_table.tsv
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -90,11 +71,10 @@ process GATKSV_GENERATEBATCHMETRICS {
 
     stub:
     """
-    mkdir -p generate_batch_metrics_results/call-stub
-    mkdir -p generate_batch_metrics_results/exposed
-    touch generate_batch_metrics_results/call-stub/.stub
-    touch generate_batch_metrics_results/exposed/metrics.tsv
-    touch generate_batch_metrics_results/exposed/ploidy_table.tsv
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${batch_name}.metrics.tsv
+    touch ${batch_name}.ploidy_table.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

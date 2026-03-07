@@ -64,7 +64,8 @@ workflow GATKSVCALLER {
     //
     BATCH_PROCESSING (
         SAMPLE_PROCESSING.out.train_gcnv_input,
-        SAMPLE_PROCESSING.out.batch_evidence_input
+        SAMPLE_PROCESSING.out.batch_evidence_input,
+        SAMPLE_PROCESSING.out.outlier_sample_ids_by_batch
     )
     ch_versions = ch_versions.mix(BATCH_PROCESSING.out.versions)
 

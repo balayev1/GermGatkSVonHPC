@@ -167,11 +167,14 @@ workflow SAMPLE_PROCESSING {
         sample_qc_input
     )
     versions = versions.mix(SAMPLE_QC.out.versions)
+    sample_qc_outlier_ids_by_cohort = SAMPLE_QC.out.sample_qc_reports
+        .filter { cohort, report_file -> report_file.getName() == "Excluded_Sample_ID_only.tsv" }
+        .map { cohort, report_file -> tuple(cohort.toString(), report_file) }
 
     counts_by_sample_keyed = counts_by_sample
         .map { cohort, batch, sample_id, counts_file -> tuple("${cohort}::${sample_id}", cohort, batch, sample_id, counts_file) }
 
-    train_gcnv_input = Channel.empty()
+    train_gcnv_input_base = Channel.empty()
     model_batch_assignments_keyed = Channel.empty()
     if (params.run_batching) {
         batching_input = passing_samples_metadata
@@ -204,7 +207,7 @@ workflow SAMPLE_PROCESSING {
 
         model_batch_assignments_keyed = batch_assignments_keyed
 
-        train_gcnv_input = batch_assignments_keyed
+        train_gcnv_input_base = batch_assignments_keyed
             .join(counts_by_sample_keyed)
             .map { sample_key, cohort, batch, sample_id, cohort2, batch2, sample_id2, counts_file ->
                 if (cohort != cohort2 || sample_id != sample_id2) {
@@ -220,12 +223,27 @@ workflow SAMPLE_PROCESSING {
                 tuple(sample_key, cohort, batch, sample_id)
             }
 
-        train_gcnv_input = counts_by_sample_keyed
+        train_gcnv_input_base = counts_by_sample_keyed
             .map { sample_key, cohort, batch, sample_id, counts_file ->
                 tuple("${cohort}__${batch}", sample_id, counts_file)
             }
             .groupTuple()
     }
+
+    batch_to_cohort = model_batch_assignments_keyed
+        .map { sample_key, cohort, batch, sample_id -> tuple("${cohort}__${batch}", cohort.toString()) }
+        .unique()
+
+    outlier_sample_ids_by_batch = batch_to_cohort
+        .map { batch_key, cohort -> tuple(cohort, batch_key) }
+        .join(sample_qc_outlier_ids_by_cohort)
+        .map { cohort, batch_key, outlier_sample_ids_file -> tuple(batch_key, outlier_sample_ids_file) }
+
+    train_gcnv_input = train_gcnv_input_base
+        .join(outlier_sample_ids_by_batch)
+        .map { batch_key, sample_ids, count_files, outlier_sample_ids_file ->
+            tuple(batch_key, sample_ids, count_files, outlier_sample_ids_file)
+        }
 
     batch_evidence_input = model_batch_assignments_keyed
         .join(evidence_with_required_files_keyed)
@@ -252,4 +270,5 @@ workflow SAMPLE_PROCESSING {
     versions
     train_gcnv_input
     batch_evidence_input
+    outlier_sample_ids_by_batch
 }

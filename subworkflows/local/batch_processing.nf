@@ -11,8 +11,9 @@ include { GATKSV_FILTERBATCHSAMPLES } from '../../modules/local/filter_batch_sam
 
 workflow BATCH_PROCESSING {
     take:
-    train_gcnv_input  // channel: [ cohort_or_batch, sample_ids, count_files ]
+    train_gcnv_input  // channel: [ cohort_or_batch, sample_ids, count_files, outlier_sample_ids ]
     batch_evidence_input  // channel: [ batch, sample_ids, ped_file, counts, PE_files, SR_files, SD_files, *_vcfs ]
+    outlier_sample_ids_by_batch  // channel: [ batch, outlier_sample_ids ]
 
     main:
     versions = Channel.empty()
@@ -28,7 +29,6 @@ workflow BATCH_PROCESSING {
         contig_ploidy_model_tar = GATK_TRAINGCNV.out.cohort_contig_ploidy_model_tar
     }
 
-    generate_batch_metrics_results = Channel.empty()
     generate_batch_metrics_metrics = Channel.empty()
     generate_batch_metrics_ploidy_table = Channel.empty()
     batch_cohort = Channel.empty()
@@ -36,11 +36,11 @@ workflow BATCH_PROCESSING {
     merged_bincov = Channel.empty()
     merged_SR = Channel.empty()
     median_cov = Channel.empty()
-    filter_batch_sites_results = Channel.empty()
     filter_batch_sites_cutoffs = Channel.empty()
     filter_batch_sites_sv_counts = Channel.empty()
     filter_batch_sites_sv_count_plots = Channel.empty()
-    filter_batch_samples_results = Channel.empty()
+    cluster_batch_num_outlier_samples_int = Channel.empty()
+    filter_batch_sites_num_outlier_samples_int = Channel.empty()
     filtered_depth_vcf = Channel.empty()
     filtered_pesr_vcf = Channel.empty()
     outlier_samples_excluded_file = Channel.empty()
@@ -68,11 +68,23 @@ workflow BATCH_PROCESSING {
             if (!candidates) {
                 throw new IllegalStateException("Expected at least one file for ${label}")
             }
-            if (candidates.size() == 1) {
-                return candidates[0]
+            def nonIndexCandidates = candidates.findAll { f ->
+                def n = f.getName().toLowerCase()
+                !(n.endsWith('.tbi') || n.endsWith('.csi') || n.endsWith('.idx'))
             }
-            def merged = candidates.findAll { it.getName().toLowerCase().contains("merged") }
-            return merged ? merged[0] : candidates[0]
+            def pool = nonIndexCandidates ? nonIndexCandidates : candidates
+            if (pool.size() == 1) {
+                return pool[0]
+            }
+            def merged = pool.findAll { it.getName().toLowerCase().contains("merged") }
+            if (merged) {
+                return merged[0]
+            }
+            def vcf = pool.findAll { f ->
+                def n = f.getName().toLowerCase()
+                n.endsWith('.vcf') || n.endsWith('.vcf.gz')
+            }
+            return vcf ? vcf[0] : pool[0]
         }
 
         batch_cohort = batch_evidence_input
@@ -156,6 +168,10 @@ workflow BATCH_PROCESSING {
                 cluster_batch_input
             )
             versions = versions.mix(GATKSV_CLUSTERBATCH.out.versions)
+            cluster_batch_num_outlier_samples_int = GATKSV_CLUSTERBATCH.out.num_outlier_samples
+                .map { batch_key, outliers_file ->
+                    tuple(batch_key, outliers_file.text.trim().toInteger())
+                }
 
             if (params.run_generate_batch_metrics) {
                 generate_batch_metrics_input = ped_by_batch
@@ -168,10 +184,10 @@ workflow BATCH_PROCESSING {
                     .join(GATKSV_CLUSTERBATCH.out.clustered_manta_vcf)
                     .join(GATKSV_CLUSTERBATCH.out.clustered_wham_vcf)
                     .join(GATKSV_CLUSTERBATCH.out.clustered_scramble_vcf)
-                    .map { batch_key, cohort, ped_file, merged_pe, merged_baf, merged_bincov_file, merged_sr, median_cov_file, clustered_depth_vcf, clustered_manta_vcf, clustered_wham_vcf, clustered_scramble_vcf ->
+                    .join(outlier_sample_ids_by_batch)
+                    .map { batch_key, cohort, ped_file, merged_pe, merged_baf, merged_bincov_file, merged_sr, median_cov_file, clustered_depth_vcf, clustered_manta_vcf, clustered_wham_vcf, clustered_scramble_vcf, outlier_sample_ids_file ->
                         tuple(
                             batch_key,
-                            cohort,
                             ped_file,
                             selectSinglePath(merged_pe, "merged_PE"),
                             selectSinglePath(merged_baf, "merged_BAF"),
@@ -181,7 +197,8 @@ workflow BATCH_PROCESSING {
                             selectSinglePath(clustered_depth_vcf, "clustered_depth_vcf"),
                             selectSinglePath(clustered_manta_vcf, "clustered_manta_vcf"),
                             selectSinglePath(clustered_wham_vcf, "clustered_wham_vcf"),
-                            selectSinglePath(clustered_scramble_vcf, "clustered_scramble_vcf")
+                            selectSinglePath(clustered_scramble_vcf, "clustered_scramble_vcf"),
+                            selectSinglePath(outlier_sample_ids_file, "outlier_sample_ids")
                         )
                     }
 
@@ -189,7 +206,6 @@ workflow BATCH_PROCESSING {
                     generate_batch_metrics_input
                 )
                 versions = versions.mix(GATKSV_GENERATEBATCHMETRICS.out.versions)
-                generate_batch_metrics_results = GATKSV_GENERATEBATCHMETRICS.out.generate_batch_metrics_results
                 generate_batch_metrics_metrics = GATKSV_GENERATEBATCHMETRICS.out.metrics
                 generate_batch_metrics_ploidy_table = GATKSV_GENERATEBATCHMETRICS.out.ploidy_table
 
@@ -216,10 +232,13 @@ workflow BATCH_PROCESSING {
                         filter_batch_sites_input
                     )
                     versions = versions.mix(GATKSV_FILTERBATCHSITES.out.versions)
-                    filter_batch_sites_results = GATKSV_FILTERBATCHSITES.out.filter_batch_sites_results
                     filter_batch_sites_cutoffs = GATKSV_FILTERBATCHSITES.out.cutoffs
                     filter_batch_sites_sv_counts = GATKSV_FILTERBATCHSITES.out.sv_counts
                     filter_batch_sites_sv_count_plots = GATKSV_FILTERBATCHSITES.out.sv_count_plots
+                    filter_batch_sites_num_outlier_samples_int = GATKSV_FILTERBATCHSITES.out.num_outlier_samples
+                        .map { batch_key, outliers_file ->
+                            tuple(batch_key, outliers_file.text.trim().toInteger())
+                        }
 
                     if (params.run_filter_batch_samples) {
                         filter_batch_samples_input = batch_cohort
@@ -244,11 +263,22 @@ workflow BATCH_PROCESSING {
                             filter_batch_samples_input
                         )
                         versions = versions.mix(GATKSV_FILTERBATCHSAMPLES.out.versions)
-                        filter_batch_samples_results = GATKSV_FILTERBATCHSAMPLES.out.filter_batch_samples_results
                         filtered_depth_vcf = GATKSV_FILTERBATCHSAMPLES.out.filtered_depth_vcf
+                            .map { batch_key, file_value ->
+                                tuple(batch_key, selectSinglePath(file_value, "filtered_depth_vcf"))
+                            }
                         filtered_pesr_vcf = GATKSV_FILTERBATCHSAMPLES.out.filtered_pesr_vcf
+                            .map { batch_key, file_value ->
+                                tuple(batch_key, selectSinglePath(file_value, "filtered_pesr_vcf"))
+                            }
                         outlier_samples_excluded_file = GATKSV_FILTERBATCHSAMPLES.out.outlier_samples_excluded_file
+                            .map { batch_key, file_value ->
+                                tuple(batch_key, selectSinglePath(file_value, "outlier_samples_excluded_file"))
+                            }
                         filtered_batch_samples_file = GATKSV_FILTERBATCHSAMPLES.out.filtered_batch_samples_file
+                            .map { batch_key, file_value ->
+                                tuple(batch_key, selectSinglePath(file_value, "filtered_batch_samples_file"))
+                            }
                     }
                 }
             }
@@ -257,7 +287,6 @@ workflow BATCH_PROCESSING {
 
     emit:
     versions
-    generate_batch_metrics_results
     generate_batch_metrics_metrics
     generate_batch_metrics_ploidy_table
     batch_cohort
@@ -265,11 +294,11 @@ workflow BATCH_PROCESSING {
     merged_bincov
     merged_SR
     median_cov
-    filter_batch_sites_results
     filter_batch_sites_cutoffs
     filter_batch_sites_sv_counts
     filter_batch_sites_sv_count_plots
-    filter_batch_samples_results
+    cluster_batch_num_outlier_samples_int
+    filter_batch_sites_num_outlier_samples_int
     filtered_depth_vcf
     filtered_pesr_vcf
     outlier_samples_excluded_file

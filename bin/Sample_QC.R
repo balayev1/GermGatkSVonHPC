@@ -275,4 +275,6 @@ if (length(excluded_samples) > 0) {
     final_df <- data.frame(sample_id = character(), reason = character()) 
     write.table(final_df, file.path(outdir, "Excluded_Samples_Report.tsv"), 
                 sep = "\t", quote = FALSE, row.names = FALSE)
+    write.table(character(), file.path(outdir, "Excluded_Sample_ID_only.tsv"),
+                sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 }

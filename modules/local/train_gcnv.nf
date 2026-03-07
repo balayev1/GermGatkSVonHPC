@@ -7,7 +7,7 @@ process GATK_TRAINGCNV {
     label 'process_medium'
 
     input:
-    tuple val(cohort), val(sample_ids), path(count_files)  // (Mandatory!) channel: [cohort, sample_ids, count_files]
+    tuple val(cohort), val(sample_ids), path(count_files), val(outlier_sample_ids)  // channel: [cohort, sample_ids, count_files, outlier_sample_ids?]
 
     output:
     tuple val(cohort), path("**/${cohort}-contig-ploidy-model.tar.gz"), emit: cohort_contig_ploidy_model_tar
@@ -27,8 +27,8 @@ process GATK_TRAINGCNV {
     def template_path = file(params.traingcnv_template).toAbsolutePath()
     def static_map = params.tool_inputs?.traingcnv ?: [:]
     def static_json = JsonOutput.toJson(static_map)
-    def cohort_name = cohort?.toString()?.trim()
-    if (!cohort_name) {
+    def cohort_key = cohort?.toString()?.trim()
+    if (!cohort_key) {
         throw new IllegalArgumentException("TrainGCNV cohort is required")
     }
 
@@ -45,8 +45,11 @@ process GATK_TRAINGCNV {
     def dynamic = [
         "TrainGCNV.samples"    : samples,
         "TrainGCNV.count_files": counts,
-        "TrainGCNV.cohort"     : cohort_name
+        "TrainGCNV.cohort"     : cohort_key
     ]
+    if (outlier_sample_ids != null && outlier_sample_ids.toString().trim()) {
+        dynamic["TrainGCNV.outlier_sample_ids"] = file(outlier_sample_ids.toString()).toRealPath().toString()
+    }
     file("train_gcnv_dynamic.json").text = JsonOutput.prettyPrint(JsonOutput.toJson(dynamic))
 
     def avail_mem = 3072
@@ -71,12 +74,6 @@ process GATK_TRAINGCNV {
         -i train_gcnv_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p train_gcnv_results
-    cp train_gcnv_inputs.json train_gcnv_results/
-    find cromwell-executions/TrainGCNV/ -name "call-*" -type d -exec cp -r {} train_gcnv_results/ \\;
-    touch train_gcnv_results/placeholder.gcnv_model_tars.tar
-    touch train_gcnv_results/placeholder.contig_ploidy_model_tar.tar
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -85,10 +82,16 @@ process GATK_TRAINGCNV {
 
     stub:
     """
-    mkdir -p train_gcnv_results/call-stub
-    touch train_gcnv_results/call-stub/.stub
-    touch train_gcnv_results/placeholder.gcnv_model_tars.tar
-    touch train_gcnv_results/placeholder.contig_ploidy_model_tar.tar
+    mkdir -p call-stub
+    touch call-stub/.stub
+    touch ${cohort}-contig-ploidy-model.tar.gz
+    touch ${cohort}-gcnv-model-shard-1.tar.gz
+    touch ${cohort}-contig-ploidy-calls.tar.gz
+    touch ${cohort}-gcnv-calls-shard-1.tar.gz
+    touch genotyped-segments-1.vcf.gz
+    touch ${cohort}-gcnv-tracking-shard1.tar.gz
+    touch genotyped-intervals-1.vcf.gz
+    touch denoised_copy_ratios-1.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

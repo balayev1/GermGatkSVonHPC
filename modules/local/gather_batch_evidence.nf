@@ -107,10 +107,6 @@ process GATKSV_GATHERBATCHEVIDENCE {
         -i gather_batch_evidence_inputs.json \\
         -p ${params.deps_zip}
 
-    mkdir -p gather_batch_evidence_results
-    cp gather_batch_evidence_inputs.json gather_batch_evidence_results/
-    find cromwell-executions/GatherBatchEvidence/ -name "call-*" -type d -exec cp -r {} gather_batch_evidence_results/ \\;
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -119,18 +115,18 @@ process GATKSV_GATHERBATCHEVIDENCE {
 
     stub:
     """
-    mkdir -p gather_batch_evidence_results/call-stub/execution
-    touch gather_batch_evidence_results/call-stub/.stub
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.baf.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.sr.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.pe.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.RD.txt.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.del.bed
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.dup.bed
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}_medianCov.transposed.bed
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.manta_std.tar.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.wham_std.tar.gz
-    touch gather_batch_evidence_results/call-stub/execution/${batch_name}.scramble_std.tar.gz
+    mkdir -p call-stub/execution
+    touch call-stub/.stub
+    touch call-stub/execution/${batch_name}.baf.txt.gz
+    touch call-stub/execution/${batch_name}.sr.txt.gz
+    touch call-stub/execution/${batch_name}.pe.txt.gz
+    touch call-stub/execution/${batch_name}.RD.txt.gz
+    touch call-stub/execution/${batch_name}.del.bed
+    touch call-stub/execution/${batch_name}.dup.bed
+    touch call-stub/execution/${batch_name}_medianCov.transposed.bed
+    touch call-stub/execution/${batch_name}.manta_std.tar.gz
+    touch call-stub/execution/${batch_name}.wham_std.tar.gz
+    touch call-stub/execution/${batch_name}.scramble_std.tar.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
