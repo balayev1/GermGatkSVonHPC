@@ -1,0 +1,23 @@
+{
+  "CombineBatches.contig_list": "__SET_BY_CONFIG__",
+  "CombineBatches.clustering_config_part1" : "__SET_BY_CONFIG__",
+  "CombineBatches.stratification_config_part1" : "__SET_BY_CONFIG__",
+  "CombineBatches.clustering_config_part2" : "__SET_BY_CONFIG__",
+  "CombineBatches.stratification_config_part2" : "__SET_BY_CONFIG__",
+  "CombineBatches.track_bed_files": "__SET_BY_CONFIG__",
+  "CombineBatches.track_names": "__SET_BY_CONFIG__",
+  "CombineBatches.min_sr_background_fail_batches": "__SET_BY_CONFIG__",
+  "CombineBatches.gatk_docker": "__SET_BY_CONFIG__",
+  "CombineBatches.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "CombineBatches.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "CombineBatches.cohort_name": "__INJECT_COHORT_NAME__",
+  "CombineBatches.batches": "__INJECT_BATCHES__",
+  "CombineBatches.pesr_vcfs": "__INJECT_PESR_VCFS__",
+  "CombineBatches.depth_vcfs": "__INJECT_DEPTH_VCFS__",
+  "CombineBatches.ped_file": "__INJECT_PED_FILE__",
+  "CombineBatches.reference_dict" : "__SET_BY_CONFIG__",
+  "CombineBatches.reference_fasta" : "__SET_BY_CONFIG__",
+  "CombineBatches.reference_fasta_fai" : "__SET_BY_CONFIG__",
+  "CombineBatches.chr_x": "__SET_BY_CONFIG__",
+  "CombineBatches.chr_y": "__SET_BY_CONFIG__"
+}

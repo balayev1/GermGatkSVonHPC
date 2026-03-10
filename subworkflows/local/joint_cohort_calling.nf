@@ -4,6 +4,8 @@
 
 include { GATKSV_MERGEBATCHSITES } from '../../modules/local/merge_batch_sites.nf'
 include { GATKSV_GENOTYPEBATCH } from '../../modules/local/genotype_batch.nf'
+include { GATKSV_REGENOTYPECNVS } from '../../modules/local/regenotype_cnvs.nf'
+include { GATKSV_COMBINEBATCHES } from '../../modules/local/combine_batches.nf'
 
 workflow JOINT_COHORT_CALLING {
     take:
@@ -14,8 +16,10 @@ workflow JOINT_COHORT_CALLING {
     cutoffs
     merged_PE
     merged_bincov
+    merged_bincov_index
     merged_SR
     median_cov
+    ch_ped_file
 
     main:
     versions = Channel.empty()
@@ -27,6 +31,8 @@ workflow JOINT_COHORT_CALLING {
     genotyping_pe_table = Channel.empty()
     genotyping_sr_table = Channel.empty()
     regeno_coverage_medians = Channel.empty()
+    regenotyped_depth_vcfs = Channel.empty()
+    combine_batches_vcf = Channel.empty()
 
     def asList = { value ->
         if (value == null) {
@@ -44,6 +50,10 @@ workflow JOINT_COHORT_CALLING {
         }
         def preferred = candidates.findAll { it.getName().toLowerCase().contains("merged") || it.getName().toLowerCase().contains("cohort") }
         return preferred ? preferred[0] : candidates[0]
+    }
+
+    if (params.run_regenotype_cnvs && !params.run_merge_batch_sites) {
+        throw new IllegalStateException("run_regenotype_cnvs=true requires run_merge_batch_sites=true")
     }
 
     if (params.run_merge_batch_sites) {
@@ -116,6 +126,94 @@ workflow JOINT_COHORT_CALLING {
             genotyping_sr_table = GATKSV_GENOTYPEBATCH.out.genotyping_sr_table
             regeno_coverage_medians = GATKSV_GENOTYPEBATCH.out.regeno_coverage_medians
         }
+
+        if (params.run_regenotype_cnvs) {
+            if (!params.run_genotype_batch) {
+                throw new IllegalStateException("run_regenotype_cnvs=true requires run_genotype_batch=true")
+            }
+
+            regenotype_cnvs_input = batch_cohort
+                .join(filtered_depth_vcf)
+                .join(genotyped_depth_vcf)
+                .join(merged_bincov)
+                .join(merged_bincov_index)
+                .join(median_cov)
+                .join(genotyping_rd_table)
+                .join(ploidy_table)
+                .join(regeno_coverage_medians)
+                .map { batch_key, cohort, batch_depth_vcf, depth_vcf, coveragefile, coveragefile_idx, medianfile, rd_table, ploidy_table_file, regeno_cov_median ->
+                    tuple(
+                        cohort,
+                        batch_key.toString(),
+                        selectSinglePath(batch_depth_vcf, "batch_depth_vcf"),
+                        selectSinglePath(depth_vcf, "depth_vcf"),
+                        selectSinglePath(coveragefile, "coveragefile"),
+                        selectSinglePath(coveragefile_idx, "coveragefile_idx"),
+                        selectSinglePath(medianfile, "medianfile"),
+                        selectSinglePath(rd_table, "genotyping_rd_table"),
+                        selectSinglePath(ploidy_table_file, "ploidy_table"),
+                        selectSinglePath(regeno_cov_median, "regeno_coverage_medians")
+                    )
+                }
+                .groupTuple()
+                .join(merge_batch_sites_vcf)
+                .map { cohort, batches, batch_depth_vcfs, depth_vcfs, coveragefiles, coveragefile_idxs, medianfiles, rd_tables, ploidy_tables, regeno_cov_medians, merge_sites_vcf ->
+                    tuple(
+                        cohort,
+                        asList(depth_vcfs).collect { file(it.toString()) },
+                        selectSinglePath(merge_sites_vcf, "merge_batch_sites_vcf"),
+                        asList(batch_depth_vcfs).collect { file(it.toString()) },
+                        asList(coveragefiles).collect { file(it.toString()) },
+                        asList(coveragefile_idxs).collect { file(it.toString()) },
+                        asList(medianfiles).collect { file(it.toString()) },
+                        asList(rd_tables).collect { file(it.toString()) },
+                        asList(ploidy_tables).collect { file(it.toString()) },
+                        asList(batches).collect { it.toString() },
+                        asList(regeno_cov_medians).collect { file(it.toString()) }
+                    )
+                }
+
+            GATKSV_REGENOTYPECNVS (
+                regenotype_cnvs_input
+            )
+            versions = versions.mix(GATKSV_REGENOTYPECNVS.out.versions)
+            regenotyped_depth_vcfs = GATKSV_REGENOTYPECNVS.out.regenotyped_depth_vcfs
+        }
+
+        if (params.run_combine_batches) {
+            if (!params.run_regenotype_cnvs) {
+                throw new IllegalStateException("run_combine_batches=true requires run_regenotype_cnvs=true")
+            }
+
+            combine_batches_input = batch_cohort
+                .join(genotyped_pesr_vcf)
+                .join(regenotyped_depth_vcfs)
+                .map { batch_key, cohort, pesr_vcf, depth_vcf ->
+                    tuple(
+                        cohort,
+                        batch_key.toString(),
+                        selectSinglePath(pesr_vcf, "pesr_vcf"),
+                        selectSinglePath(depth_vcf, "depth_vcf")
+                    )
+                }
+                .groupTuple()
+                .join(ch_ped_file)
+                .map { cohort, batches, pesr_vcfs, depth_vcfs, ped_file ->
+                    tuple(
+                        cohort,
+                        asList(batches).collect { it.toString() },
+                        ped_file,
+                        asList(pesr_vcfs).collect { file(it.toString()) },
+                        asList(depth_vcfs).collect { file(it.toString()) }
+                    )
+                }
+
+            GATKSV_COMBINEBATCHES (
+                combine_batches_input
+            )
+            versions = versions.mix(GATKSV_COMBINEBATCHES.out.versions)
+            combine_batches_vcf = GATKSV_COMBINEBATCHES.out.combined_vcf
+        }
     }
 
     emit:
@@ -127,4 +225,6 @@ workflow JOINT_COHORT_CALLING {
     genotyping_pe_table
     genotyping_sr_table
     regeno_coverage_medians
+    regenotyped_depth_vcfs
+    combine_batches_vcf
 }

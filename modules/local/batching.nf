@@ -28,8 +28,21 @@ process BATCHING {
     def batch_prefix = params.batching_batch_prefix ?: "${cohort}_batch_"
     def batch_suffix = params.batching_batch_suffix ?: ''
     """
+    mkdir -p batching_out/input
+
+    merged_passing_samples_metadata="batching_out/input/passing_samples_metadata.tsv"
+    first=1
+    for f in ${passing_samples_metadata}; do
+        if [[ "\$first" -eq 1 ]]; then
+            cat "\$f" > "\$merged_passing_samples_metadata"
+            first=0
+        else
+            tail -n +2 "\$f" >> "\$merged_passing_samples_metadata"
+        fi
+    done
+
     python ${projectDir}/bin/Batching.py \\
-        --pass-metadata "${passing_samples_metadata}" \\
+        --pass-metadata "\$merged_passing_samples_metadata" \\
         --include-metrics "${params.batching_include_metrics}" \\
         --include-bins "${include_bins}" \\
         --target-batch-size ${params.batching_target_batch_size} \\

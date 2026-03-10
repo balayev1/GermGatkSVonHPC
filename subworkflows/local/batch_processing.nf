@@ -34,6 +34,7 @@ workflow BATCH_PROCESSING {
     batch_cohort = Channel.empty()
     merged_PE = Channel.empty()
     merged_bincov = Channel.empty()
+    merged_bincov_index = Channel.empty()
     merged_SR = Channel.empty()
     median_cov = Channel.empty()
     filter_batch_sites_cutoffs = Channel.empty()
@@ -134,6 +135,7 @@ workflow BATCH_PROCESSING {
         versions = versions.mix(GATKSV_GATHERBATCHEVIDENCE.out.versions)
         merged_PE = GATKSV_GATHERBATCHEVIDENCE.out.merged_PE
         merged_bincov = GATKSV_GATHERBATCHEVIDENCE.out.merged_bincov
+        merged_bincov_index = GATKSV_GATHERBATCHEVIDENCE.out.merged_bincov_index
         merged_SR = GATKSV_GATHERBATCHEVIDENCE.out.merged_SR
         median_cov = GATKSV_GATHERBATCHEVIDENCE.out.median_cov
 
@@ -292,6 +294,7 @@ workflow BATCH_PROCESSING {
     batch_cohort
     merged_PE
     merged_bincov
+    merged_bincov_index
     merged_SR
     median_cov
     filter_batch_sites_cutoffs

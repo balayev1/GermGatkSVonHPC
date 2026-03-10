@@ -27,6 +27,8 @@ evidence_qc_table <- args[2]
 sample_sex_assignments <- args[3]
 insert_size_results <- args[4]
 num_samples  <- as.numeric(args[5])
+ped_path <- args[6]
+cohort_id <- args[7]
 
 ## Set output directory
 outdir <- "." 
@@ -278,3 +280,22 @@ if (length(excluded_samples) > 0) {
     write.table(character(), file.path(outdir, "Excluded_Sample_ID_only.tsv"),
                 sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 }
+
+# -------------------- Generate Updated Pedigree --------------------
+# EvidenceQC sex assignment: MALE/FEMALE
+# PED file sex column: 1=male, 2=female, 0=unknown
+ped <- read.table(ped_path, sep = "\t", header = FALSE, stringsAsFactors = FALSE)
+# Create a mapping from EvidenceQC sex to PED code
+sex_map <- c("MALE" = 1, "FEMALE" = 2)
+inferred_sex_codes <- sex_map[evid_sex_file$Assignment]
+names(inferred_sex_codes) <- evid_sex_file$sample_id
+
+# Update the sex column (V5) for samples present in EvidenceQC
+# Match sample IDs (V2 in PED)
+matches <- match(ped$V2, names(inferred_sex_codes))
+valid_matches <- !is.na(matches)
+ped$V5[valid_matches] <- inferred_sex_codes[matches[valid_matches]]
+
+# Write the updated pedigree file
+write.table(ped, file.path(outdir, paste0(cohort_id, ".updated.ped")), 
+            sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)

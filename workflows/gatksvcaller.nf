@@ -16,10 +16,15 @@ if (!params.reference_dict) {
     exit 1, "Genome resource 'reference_dict' is not configured for genome '${params.genome}'."
 }
 
+if (params.run_combine_batches && !params.ped_file) {
+    exit 1, "A pedigree file is required for CombineBatches step. Please specify with --ped_file"
+}
+
 ch_input = file(params.input)
 ch_sd_locs_vcf = Channel.value(file(params.sd_locs_vcf, checkIfExists: true))
 ch_sd_locs_vcf_index = Channel.value(file(params.sd_locs_vcf_index, checkIfExists: true))
 ch_reference_dict = Channel.value(file(params.reference_dict, checkIfExists: true))
+ch_ped_file = params.ped_file ? Channel.value(file(params.ped_file, checkIfExists: true)) : Channel.empty()
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL/NF-CORE MODULES/SUBWORKFLOWS
@@ -77,8 +82,10 @@ workflow GATKSVCALLER {
         BATCH_PROCESSING.out.filter_batch_sites_cutoffs,
         BATCH_PROCESSING.out.merged_PE,
         BATCH_PROCESSING.out.merged_bincov,
+        BATCH_PROCESSING.out.merged_bincov_index,
         BATCH_PROCESSING.out.merged_SR,
-        BATCH_PROCESSING.out.median_cov
+        BATCH_PROCESSING.out.median_cov,
+        SAMPLE_PROCESSING.out.updated_ped
     )
     ch_versions = ch_versions.mix(JOINT_COHORT_CALLING.out.versions)
 }

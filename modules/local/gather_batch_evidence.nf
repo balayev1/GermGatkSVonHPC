@@ -14,6 +14,7 @@ process GATKSV_GATHERBATCHEVIDENCE {
     tuple val(batch_name), path("**/${batch_name}.sr.txt.gz"), emit: merged_SR
     tuple val(batch_name), path("**/${batch_name}.pe.txt.gz"), emit: merged_PE
     tuple val(batch_name), path("**/${batch_name}.RD.txt.gz"), emit: merged_bincov
+    tuple val(batch_name), path("**/${batch_name}.RD.txt.gz.tbi"), emit: merged_bincov_index
     tuple val(batch_name), path("**/*.del.bed"), emit: merged_dels
     tuple val(batch_name), path("**/*.dup.bed"), emit: merged_dups
     tuple val(batch_name), path("**/*_medianCov.transposed.bed"), emit: median_cov
@@ -121,6 +122,7 @@ process GATKSV_GATHERBATCHEVIDENCE {
     touch call-stub/execution/${batch_name}.sr.txt.gz
     touch call-stub/execution/${batch_name}.pe.txt.gz
     touch call-stub/execution/${batch_name}.RD.txt.gz
+    touch call-stub/execution/${batch_name}.RD.txt.gz.tbi
     touch call-stub/execution/${batch_name}.del.bed
     touch call-stub/execution/${batch_name}.dup.bed
     touch call-stub/execution/${batch_name}_medianCov.transposed.bed

@@ -12,6 +12,7 @@ process SAMPLE_QC {
     output:
     tuple val(cohort), path("*.pdf"), emit: sample_qc_plots
     tuple val(cohort), path("*.tsv"), emit: sample_qc_reports
+    tuple val(cohort), path("*.ped"), emit: updated_ped
     path "versions.yml", emit: versions
 
     script:
@@ -26,6 +27,30 @@ process SAMPLE_QC {
     awk 'NR==FNR { keep[\$1]=1; next } (\$2 in keep) { sex=(\$5=="1" ? "XY" : (\$5=="2" ? "XX" : "XX")); print \$2 "\\t" sex }' \\
         sample_ids.list ${ped_file} > sample_qc_metadata.tsv
 
+    mkdir -p sample_qc_inputs
+
+    evidence_qc_merged="sample_qc_inputs/evidence_qc_table.tsv"
+    first=1
+    for f in ${evidence_qc_table}; do
+        if [[ "\$first" -eq 1 ]]; then
+            cat "\$f" > "\$evidence_qc_merged"
+            first=0
+        else
+            tail -n +2 "\$f" >> "\$evidence_qc_merged"
+        fi
+    done
+
+    sample_sex_merged="sample_qc_inputs/sample_sex_assignments.txt"
+    first=1
+    for f in ${sample_sex_assignments}; do
+        if [[ "\$first" -eq 1 ]]; then
+            zcat -f "\$f" > "\$sample_sex_merged"
+            first=0
+        else
+            zcat -f "\$f" | tail -n +2 >> "\$sample_sex_merged"
+        fi
+    done
+
     mkdir -p insert_size_files
     for f in ${insert_size_metrics}; do
         sample_id=\$(basename "\$f")
@@ -35,10 +60,12 @@ process SAMPLE_QC {
 
     Rscript sample_qc.R \\
         sample_qc_metadata.tsv \\
-        "${evidence_qc_table}" \\
-        "${sample_sex_assignments}" \\
+        "\$evidence_qc_merged" \\
+        "\$sample_sex_merged" \\
         insert_size_files \\
-        ${num_samples}
+        ${num_samples} \\
+        "${ped_file}" \\
+        "${cohort}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

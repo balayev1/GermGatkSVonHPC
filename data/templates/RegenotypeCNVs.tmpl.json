@@ -1,0 +1,22 @@
+{
+  "RegenotypeCNVs.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.n_RdTest_bins": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.n_per_split": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.regeno_max_allele_freq": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.regeno_allele_count_threshold": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.min_var_per_sample_outlier_threshold": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.regeno_sample_overlap": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.cohort": "__INJECT_COHORT__",
+  "RegenotypeCNVs.contig_list": "__SET_BY_CONFIG__",
+  "RegenotypeCNVs.regeno_coverage_medians": "__INJECT_REGENO_COVERAGE_MEDIANS__",
+  "RegenotypeCNVs.genotyping_rd_table": "__INJECT_GENOTYPING_RD_TABLE__",
+  "RegenotypeCNVs.merge_batch_sites_vcf": "__INJECT_MERGE_BATCH_SITES_VCF__",
+  "RegenotypeCNVs.ploidy_tables": "__INJECT_PLOIDY_TABLES__",
+  "RegenotypeCNVs.batch_depth_vcfs": "__INJECT_BATCH_DEPTH_VCFS__",
+  "RegenotypeCNVs.depth_vcfs": "__INJECT_DEPTH_VCFS__",
+  "RegenotypeCNVs.coveragefiles": "__INJECT_COVERAGEFILES__",
+  "RegenotypeCNVs.coveragefile_idxs": "__INJECT_COVERAGEFILE_IDXS__",
+  "RegenotypeCNVs.medianfiles": "__INJECT_MEDIANFILES__",
+  "RegenotypeCNVs.batches": "__INJECT_BATCHES__"
+}
