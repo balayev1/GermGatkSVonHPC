@@ -152,9 +152,8 @@ workflow SAMPLE_PROCESSING {
             }
     }
 
-    evidence_qc_table_by_batch = aggregateEvidenceQcByBatch(EVIDENCE_QC.out.evidence_qc_table, "EvidenceQC table")
-    sample_sex_assignments_by_batch = aggregateEvidenceQcByBatch(EVIDENCE_QC.out.sample_sex_assignments, "sample_sex_assignments")
-    passing_samples_metadata_by_batch = aggregateEvidenceQcByBatch(EVIDENCE_QC.out.passing_samples_metadata, "passing_samples_metadata")
+    evidence_qc_table_by_batch = aggregateEvidenceQcByBatch(EVIDENCE_QC.out.qc_table, "EvidenceQC table")
+    sample_sex_assignments_by_batch = aggregateEvidenceQcByBatch(EVIDENCE_QC.out.ploidy_plots, "sample_sex_assignments")
 
     insert_metrics_by_batch = PICARD_COLLECTINSERTSIZEMETRICS.out.metrics
         .map { meta, metrics_file -> tuple(evidenceQcBatchKeyForMeta(meta), meta.id, metrics_file) }
@@ -198,6 +197,15 @@ workflow SAMPLE_PROCESSING {
     sample_qc_outlier_ids_by_batch = SAMPLE_QC.out.sample_qc_reports
         .filter { batch_key, report_file -> report_file.getName() == "Excluded_Sample_ID_only.tsv" }
         .map { batch_key, report_file -> tuple(batch_key.toString(), report_file) }
+
+    passing_samples_metadata_by_batch = SAMPLE_QC.out.passing_samples_metadata
+        .map { batch_key, sample_ids, passing_samples_metadata_file ->
+            tuple(
+                batch_key.toString(),
+                asList(sample_ids).collect { it.toString() },
+                [passing_samples_metadata_file]
+            )
+        }
 
     batch_key_to_cohort = ped_by_batch
         .map { batch_key, cohort, ped_file -> tuple(batch_key.toString(), cohort.toString()) }
@@ -334,4 +342,7 @@ workflow SAMPLE_PROCESSING {
     batch_evidence_input
     outlier_sample_ids_by_batch
     updated_ped = ch_updated_ped_by_cohort
+    evidence_qc_manta_variant_counts = EVIDENCE_QC.out.manta_variant_counts
+    evidence_qc_wham_variant_counts = EVIDENCE_QC.out.wham_variant_counts
+    evidence_qc_scramble_variant_counts = EVIDENCE_QC.out.scramble_variant_counts
 }

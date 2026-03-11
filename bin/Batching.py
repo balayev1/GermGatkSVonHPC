@@ -697,7 +697,7 @@ def _parse_csv_list(value):
 def main():
     parser = argparse.ArgumentParser(
         description="Batch generation from EvidenceQC metadata")
-    parser.add_argument("--pass-metadata", required=True, help="Path to passing_samples_metadata.tsv from EvidenceQC")
+    parser.add_argument("--pass-metadata", required=True, help="Path to passing_samples_metadata.tsv from SAMPLE_QC")
     parser.add_argument("--include-metrics", required=True, help="Comma-separated metric columns")
     parser.add_argument("--include-bins", default="", help="Comma-separated bins (length = metrics-1)")
     parser.add_argument("--target-batch-size", required=True, type=int, help="Target batch size")

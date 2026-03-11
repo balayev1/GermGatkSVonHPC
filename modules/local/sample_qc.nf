@@ -12,6 +12,7 @@ process SAMPLE_QC {
     output:
     tuple val(cohort), path("*.pdf"), emit: sample_qc_plots
     tuple val(cohort), path("*.tsv"), emit: sample_qc_reports
+    tuple val(cohort), val(sample_ids), path("passing_samples_metadata.tsv"), emit: passing_samples_metadata
     tuple val(cohort), path("*.ped"), emit: updated_ped
     path "versions.yml", emit: versions
 
@@ -40,15 +41,10 @@ process SAMPLE_QC {
         fi
     done
 
-    sample_sex_merged="sample_qc_inputs/sample_sex_assignments.txt"
-    first=1
+    sample_sex_sources="sample_qc_inputs/sample_sex_sources.list"
+    : > "\$sample_sex_sources"
     for f in ${sample_sex_assignments}; do
-        if [[ "\$first" -eq 1 ]]; then
-            zcat -f "\$f" > "\$sample_sex_merged"
-            first=0
-        else
-            zcat -f "\$f" | tail -n +2 >> "\$sample_sex_merged"
-        fi
+        printf "%s\\n" "\$f" >> "\$sample_sex_sources"
     done
 
     mkdir -p insert_size_files
@@ -61,7 +57,7 @@ process SAMPLE_QC {
     Rscript sample_qc.R \\
         sample_qc_metadata.tsv \\
         "\$evidence_qc_merged" \\
-        "\$sample_sex_merged" \\
+        "\$sample_sex_sources" \\
         insert_size_files \\
         ${num_samples} \\
         "${ped_file}" \\
@@ -78,6 +74,7 @@ process SAMPLE_QC {
     touch WGD_Score_Distribution.pdf
     touch Excluded_Samples_Report.tsv
     touch Excluded_Sample_ID_only.tsv
+    touch passing_samples_metadata.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         R: "stub"

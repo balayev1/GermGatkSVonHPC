@@ -24,7 +24,7 @@ suppressPackageStartupMessages({
 args <- commandArgs(trailingOnly = TRUE)
 metadata_path <- args[1]
 evidence_qc_table <- args[2]
-sample_sex_assignments <- args[3]
+sample_sex_sources_list <- args[3]
 insert_size_results <- args[4]
 num_samples  <- as.numeric(args[5])
 ped_path <- args[6]
@@ -44,8 +44,59 @@ insertsize_paths <- list.files(path = insert_size_results,
                                pattern = "\\.insert_size_metrics\\.txt$", 
                                full.names = TRUE)
 
-## Load sex assignment files
-evid_sex_file <- read.table(gzfile(sample_sex_assignments), sep = "\t", header = TRUE)
+read_sex_assignment_table <- function(path) {
+    path <- trimws(path)
+    if (grepl("\\.(tar\\.gz|tgz)$", path, ignore.case = TRUE)) {
+        members <- untar(path, list = TRUE)
+        target <- members[grepl("(^|/)sample_sex_assignments\\.(tsv|txt)(\\.gz)?$", members)]
+        if (length(target) == 0) {
+            target <- members[grepl("sample_sex_assignments", members)]
+        }
+        if (length(target) == 0) {
+            stop(sprintf("sample_sex_assignments file not found inside tarball: %s", path))
+        }
+        extract_dir <- tempfile("sample_sex_assignments_")
+        dir.create(extract_dir, recursive = TRUE, showWarnings = FALSE)
+        target_file <- target[1]
+        untar(path, files = target_file, exdir = extract_dir)
+        extracted_path <- file.path(extract_dir, target_file)
+        if (!file.exists(extracted_path)) {
+            candidate <- list.files(extract_dir, pattern = basename(target_file), recursive = TRUE, full.names = TRUE)
+            if (length(candidate) == 0) {
+                stop(sprintf("Failed to extract sample sex assignments from tarball: %s", path))
+            }
+            extracted_path <- candidate[1]
+        }
+        if (grepl("\\.gz$", extracted_path, ignore.case = TRUE)) {
+            return(read.table(gzfile(extracted_path), sep = "\t", header = TRUE, stringsAsFactors = FALSE))
+        }
+        return(read.table(extracted_path, sep = "\t", header = TRUE, stringsAsFactors = FALSE))
+    }
+    if (grepl("\\.gz$", path, ignore.case = TRUE)) {
+        return(read.table(gzfile(path), sep = "\t", header = TRUE, stringsAsFactors = FALSE))
+    }
+    read.table(path, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+}
+
+sex_source_paths <- readLines(sample_sex_sources_list, warn = FALSE)
+sex_source_paths <- trimws(sex_source_paths)
+sex_source_paths <- sex_source_paths[nzchar(sex_source_paths)]
+if (length(sex_source_paths) == 0) {
+    stop("No sample sex assignment sources were provided to SAMPLE_QC")
+}
+
+evid_sex_file <- bind_rows(lapply(sex_source_paths, read_sex_assignment_table))
+if (!"sample_id" %in% colnames(evid_sex_file)) {
+    if ("sample" %in% colnames(evid_sex_file)) {
+        evid_sex_file <- evid_sex_file %>% rename(sample_id = sample)
+    } else {
+        stop("Sample sex assignment table must contain a 'sample_id' column")
+    }
+}
+if (!"Assignment" %in% colnames(evid_sex_file)) {
+    stop("Sample sex assignment table must contain an 'Assignment' column")
+}
+evid_sex_file <- evid_sex_file %>% distinct(sample_id, .keep_all = TRUE)
 
 
 # -------------------- Filters --------------------
@@ -280,6 +331,29 @@ if (length(excluded_samples) > 0) {
     write.table(character(), file.path(outdir, "Excluded_Sample_ID_only.tsv"),
                 sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 }
+
+# Build passing_samples_metadata.tsv for downstream batching
+excluded_unique <- unique(as.character(excluded_samples))
+passing_samples_metadata <- evid_qc_file[!(evid_qc_file$sample_id %in% excluded_unique), , drop = FALSE]
+if (!("chrX_CopyNumber_rounded" %in% colnames(passing_samples_metadata))) {
+    if ("chrX_CopyNumber" %in% colnames(passing_samples_metadata)) {
+        passing_samples_metadata$chrX_CopyNumber_rounded <- round(as.numeric(passing_samples_metadata$chrX_CopyNumber))
+    } else {
+        inferred_numeric <- ifelse(
+            evid_sex_file$Assignment[match(passing_samples_metadata$sample_id, evid_sex_file$sample_id)] == "MALE",
+            1,
+            2
+        )
+        passing_samples_metadata$chrX_CopyNumber_rounded <- inferred_numeric
+    }
+}
+write.table(
+    passing_samples_metadata,
+    file.path(outdir, "passing_samples_metadata.tsv"),
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE
+)
 
 # -------------------- Generate Updated Pedigree --------------------
 # EvidenceQC sex assignment: MALE/FEMALE

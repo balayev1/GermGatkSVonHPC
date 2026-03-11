@@ -10,9 +10,24 @@ process GATKSV_EVIDENCEQC {
     tuple val(cohort), val(sample_ids), path(count_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files)
 
     output:
-    tuple val(cohort), val(sample_ids), path("**/${cohort}.evidence_qc_table.tsv"), emit: evidence_qc_table
-    tuple val(cohort), val(sample_ids), path("**/ploidy_est/sample_sex_assignments.txt.gz"), emit: sample_sex_assignments
-    tuple val(cohort), val(sample_ids), path("**/passing_samples_metadata.tsv"), emit: passing_samples_metadata
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.evidence_qc_table.tsv"), emit: qc_table
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.RD.txt.gz"), emit: bincov_matrix
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.RD.txt.gz.tbi"), emit: bincov_matrix_index
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_medianCov.transposed.bed"), emit: bincov_median
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_ploidy_matrix.bed.gz"), emit: ploidy_matrix
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_ploidy_est.tar.gz"), emit: ploidy_plots
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_WGD_scoring_matrix_output.bed.gz"), emit: WGD_matrix
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_WGD_scores.txt.gz"), emit: WGD_scores
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}_WGD_score_distributions.pdf"), emit: WGD_dist
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.manta.variant_counts.tsv"), emit: manta_variant_counts 
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.wham.variant_counts.tsv"), emit: wham_variant_counts 
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.scramble.variant_counts.tsv"), emit: scramble_variant_counts    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.manta.QC.outlier.low"), emit: manta_qc_low    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.manta.QC.outlier.high"), emit: manta_qc_high    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.scramble.QC.outlier.low"), emit: scramble_qc_low    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.scramble.QC.outlier.high"), emit: scramble_qc_high    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.wham.QC.outlier.low"), emit: wham_qc_low    
+    tuple val(cohort), val(sample_ids), path("${cohort}/${cohort}.wham.QC.outlier.high"), emit: wham_qc_high    
     path "versions.yml", emit: versions
 
     script:
@@ -70,7 +85,37 @@ process GATKSV_EVIDENCEQC {
         -i evidence_qc_inputs.json \\
         -p ${params.deps_zip}
 
-    find cromwell-executions/EvidenceQC/* -type d -name 'tmpVcfs' -exec rm -rf {} +
+    mkdir -p "${cohort_name}"
+
+    copy_output_file() {
+        local filename="\$1"
+        local source
+        source=\$(find cromwell-executions/EvidenceQC -type f -name "\${filename}" | head -n 1 || true)
+        if [[ -z "\$source" ]]; then
+            echo "ERROR: Expected EvidenceQC output not found: \${filename}" >&2
+            exit 1
+        fi
+        cp -L "\$source" "${cohort_name}/\${filename}"
+    }
+
+    copy_output_file "${cohort_name}.evidence_qc_table.tsv"
+    copy_output_file "${cohort_name}.RD.txt.gz"
+    copy_output_file "${cohort_name}.RD.txt.gz.tbi"
+    copy_output_file "${cohort_name}_medianCov.transposed.bed"
+    copy_output_file "${cohort_name}_ploidy_matrix.bed.gz"
+    copy_output_file "${cohort_name}_ploidy_est.tar.gz"
+    copy_output_file "${cohort_name}_WGD_scoring_matrix_output.bed.gz"
+    copy_output_file "${cohort_name}_WGD_scores.txt.gz"
+    copy_output_file "${cohort_name}_WGD_score_distributions.pdf"
+    copy_output_file "${cohort_name}.manta.variant_counts.tsv"
+    copy_output_file "${cohort_name}.wham.variant_counts.tsv"
+    copy_output_file "${cohort_name}.scramble.variant_counts.tsv"
+    copy_output_file "${cohort_name}.manta.QC.outlier.low"
+    copy_output_file "${cohort_name}.manta.QC.outlier.high"
+    copy_output_file "${cohort_name}.scramble.QC.outlier.low"
+    copy_output_file "${cohort_name}.scramble.QC.outlier.high"
+    copy_output_file "${cohort_name}.wham.QC.outlier.low"
+    copy_output_file "${cohort_name}.wham.QC.outlier.high"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -80,12 +125,25 @@ process GATKSV_EVIDENCEQC {
 
     stub:
     """
-    mkdir -p call-stub
-    mkdir -p ploidy_est
-    touch call-stub/.stub
-    touch ${cohort}.evidence_qc_table.tsv
-    touch ploidy_est/sample_sex_assignments.txt.gz
-    touch passing_samples_metadata.tsv
+    mkdir -p ${cohort}
+    touch ${cohort}/${cohort}.evidence_qc_table.tsv
+    touch ${cohort}/${cohort}.RD.txt.gz
+    touch ${cohort}/${cohort}.RD.txt.gz.tbi
+    touch ${cohort}/${cohort}_medianCov.transposed.bed
+    touch ${cohort}/${cohort}_ploidy_matrix.bed.gz
+    touch ${cohort}/${cohort}_ploidy_est.tar.gz
+    touch ${cohort}/${cohort}_WGD_scoring_matrix_output.bed.gz
+    touch ${cohort}/${cohort}_WGD_scores.txt.gz
+    touch ${cohort}/${cohort}_WGD_score_distributions.pdf
+    touch ${cohort}/${cohort}.manta.variant_counts.tsv
+    touch ${cohort}/${cohort}.wham.variant_counts.tsv
+    touch ${cohort}/${cohort}.scramble.variant_counts.tsv
+    touch ${cohort}/${cohort}.manta.QC.outlier.low
+    touch ${cohort}/${cohort}.manta.QC.outlier.high
+    touch ${cohort}/${cohort}.scramble.QC.outlier.low
+    touch ${cohort}/${cohort}.scramble.QC.outlier.high
+    touch ${cohort}/${cohort}.wham.QC.outlier.low
+    touch ${cohort}/${cohort}.wham.QC.outlier.high
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
