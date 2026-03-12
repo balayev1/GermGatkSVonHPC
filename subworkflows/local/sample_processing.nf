@@ -79,6 +79,14 @@ workflow SAMPLE_PROCESSING {
 
     def sampleKeyForMeta = { meta -> "${meta.cohort}::${meta.id}" }
     def evidenceQcBatchKeyForMeta = { meta -> "${meta.cohort}__${meta.batch}" }
+    def buildSourceBatchKey = { cohort, batch ->
+        def cohort_name = cohort?.toString()?.trim()
+        def batch_name = batch?.toString()?.trim()
+        if (!cohort_name || !batch_name) {
+            throw new IllegalStateException("Missing cohort or batch value in samplesheet metadata: cohort='${cohort}', batch='${batch}'")
+        }
+        "${cohort_name}__${batch_name}"
+    }
     def cohortFromBatchKey = { batchKey ->
         def key = batchKey.toString()
         def sep = '__'
@@ -86,6 +94,13 @@ workflow SAMPLE_PROCESSING {
             throw new IllegalStateException("EvidenceQC batch key '${key}' does not contain expected '${sep}' separator")
         }
         key.split(sep, 2)[0]
+    }
+    def buildModelBatchKey = { sourceBatchKey, batchLabel ->
+        def label = batchLabel?.toString()?.trim()
+        if (!label) {
+            throw new IllegalStateException("Batching produced an empty batch label for source batch '${sourceBatchKey}'")
+        }
+        "${sourceBatchKey}__${label}"
     }
     def keyedEvidence = { ch -> ch.map { meta, evidence_file -> tuple(sampleKeyForMeta(meta), evidence_file) } }
     def asList = { value -> value instanceof List ? value : [value] }
@@ -223,8 +238,8 @@ workflow SAMPLE_PROCESSING {
 
     counts_by_sample_keyed = counts_by_sample
         .map { cohort, batch, sample_id, counts_file ->
-            def source_batch_key = "${cohort}__${batch}"
-            tuple("${cohort}::${sample_id}", source_batch_key, cohort, batch, sample_id, counts_file)
+            def source_batch_key = buildSourceBatchKey(cohort, batch)
+            tuple("${cohort}::${sample_id}", source_batch_key, cohort.toString(), batch.toString(), sample_id, counts_file)
         }
 
     train_gcnv_input_base = Channel.empty()
@@ -264,7 +279,7 @@ workflow SAMPLE_PROCESSING {
                 if (source_batch_key != source_batch_key2 || cohort_from_batching != cohort || sample_id != sample_id2) {
                     throw new IllegalStateException("Batch assignment join mismatch for '${sample_key}'")
                 }
-                def model_batch_key = "${source_batch_key}__${model_batch_label}"
+                def model_batch_key = buildModelBatchKey(source_batch_key, model_batch_label)
                 tuple(sample_key, model_batch_key, source_batch_key, cohort, sample_id2, counts_file)
             }
 
@@ -274,7 +289,7 @@ workflow SAMPLE_PROCESSING {
             }
             .groupTuple()
     } else {
-        // No automatic batching requested: one model per source cohort+batch key.
+        // No automatic batching: TrainGCNV runs per source cohort+batch key from samplesheet.
         model_batch_assignments_keyed = counts_by_sample_keyed
             .map { sample_key, source_batch_key, cohort, batch, sample_id, counts_file ->
                 tuple(sample_key, source_batch_key, source_batch_key, cohort, sample_id, counts_file)

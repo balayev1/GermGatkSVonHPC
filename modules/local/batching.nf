@@ -13,11 +13,11 @@ process BATCHING {
     tuple val(cohort), path(passing_samples_metadata), path(ped_file)
 
     output:
-    tuple val(cohort), path("batching_out/batching/batch_assignments.tsv"), emit: batch_assignments
-    tuple val(cohort), path("batching_out/batching/batching_metadata.tsv"), emit: batching_metadata
-    tuple val(cohort), path("batching_out/batching/metric_plots/*.png"), emit: metric_plots
-    tuple val(cohort), path("batching_out/batching/cluster_plots/*.png"), emit: cluster_plots
-    tuple val(cohort), path("batching_out/batching/pannelled_cluster_plots/*.png"), emit: panelled_cluster_plots
+    tuple val(cohort), path("batching_out/batch_assignments.tsv"), emit: batch_assignments
+    tuple val(cohort), path("batching_out/batching_metadata.tsv"), emit: batching_metadata
+    tuple val(cohort), path("batching_out/metric_plots/*.png"), emit: metric_plots
+    tuple val(cohort), path("batching_out/cluster_plots/*.png"), emit: cluster_plots
+    tuple val(cohort), path("batching_out/pannelled_cluster_plots/*.png"), emit: panelled_cluster_plots
     path "versions.yml", emit: versions
 
     script:
@@ -41,7 +41,7 @@ process BATCHING {
         fi
     done
 
-    python ${projectDir}/bin/Batching.py \\
+    python ${projectDir}/bin/batching.py \\
         --pass-metadata "\$merged_passing_samples_metadata" \\
         --include-metrics "${params.batching_include_metrics}" \\
         --include-bins "${include_bins}" \\
@@ -54,6 +54,12 @@ process BATCHING {
         --outdir batching_out \\
         --plot-prefix "${cohort}"
 
+    if [[ -d batching_out/batching ]]; then
+        shopt -s dotglob nullglob
+        mv batching_out/batching/* batching_out/
+        rmdir batching_out/batching || true
+    fi
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
@@ -62,14 +68,14 @@ process BATCHING {
 
     stub:
     """
-    mkdir -p batching_out/batching/metric_plots
-    mkdir -p batching_out/batching/cluster_plots
-    mkdir -p batching_out/batching/pannelled_cluster_plots
-    touch batching_out/batching/batch_assignments.tsv
-    touch batching_out/batching/batching_metadata.tsv
-    touch batching_out/batching/metric_plots/${cohort}_distribution_1_batches.png
-    touch batching_out/batching/cluster_plots/${cohort}_distribution_1_batches.png
-    touch batching_out/batching/pannelled_cluster_plots/${cohort}_distribution_1_batches.png
+    mkdir -p batching_out/metric_plots
+    mkdir -p batching_out/cluster_plots
+    mkdir -p batching_out/pannelled_cluster_plots
+    touch batching_out/batch_assignments.tsv
+    touch batching_out/batching_metadata.tsv
+    touch batching_out/metric_plots/${cohort}_distribution_1_batches.png
+    touch batching_out/cluster_plots/${cohort}_distribution_1_batches.png
+    touch batching_out/pannelled_cluster_plots/${cohort}_distribution_1_batches.png
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: "stub"

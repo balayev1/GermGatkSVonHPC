@@ -706,7 +706,7 @@ def main():
     parser.add_argument("--batch-prefix", default="batch", help="Batch prefix")
     parser.add_argument("--batch-suffix", default="", help="Batch suffix")
     parser.add_argument("--ped-file", default=None, help="Path to reference PED file (only to batch related samples)")
-    parser.add_argument("--outdir", default="evidence_qc", help="Output top-level directory")
+    parser.add_argument("--outdir", default="batching_out", help="Output top-level directory")
     parser.add_argument("--plot-prefix", default="fig_hierarchical")
     parser.add_argument("--display-plots", action="store_true")
     args = parser.parse_args()
