@@ -1,0 +1,14 @@
+{
+  "RefineComplexVariants.n_per_split": "__SET_BY_CONFIG__",
+  "RefineComplexVariants.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "RefineComplexVariants.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "RefineComplexVariants.linux_docker": "__SET_BY_CONFIG__",
+  "RefineComplexVariants.vcf": "__INJECT_VCF__",
+  "RefineComplexVariants.prefix": "__INJECT_PREFIX__",
+  "RefineComplexVariants.batch_name_list": "__INJECT_BATCH_NAME_LIST__",
+  "RefineComplexVariants.batch_sample_lists": "__INJECT_BATCH_SAMPLE_LISTS__",
+  "RefineComplexVariants.PE_metrics": "__INJECT_PE_METRICS__",
+  "RefineComplexVariants.PE_metrics_indexes": "__INJECT_PE_METRICS_INDEXES__",
+  "RefineComplexVariants.Depth_DEL_beds": "__INJECT_DEPTH_DEL_BEDS__",
+  "RefineComplexVariants.Depth_DUP_beds": "__INJECT_DEPTH_DUP_BEDS__"
+}

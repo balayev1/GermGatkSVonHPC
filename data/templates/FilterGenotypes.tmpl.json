@@ -1,0 +1,22 @@
+{
+  "FilterGenotypes.no_call_rate_cutoff": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sl_cutoff_table": "__SET_BY_CONFIG__",
+  "FilterGenotypes.optimized_sl_cutoff_table": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sl_filter_args": "__SET_BY_CONFIG__",
+  "FilterGenotypes.filter_vcf_records_per_shard": "__SET_BY_CONFIG__",
+  "FilterGenotypes.primary_contigs_fai": "__SET_BY_CONFIG__",
+  "FilterGenotypes.site_level_comparison_datasets": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sample_level_comparison_datasets": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sample_renaming_tsv": "__SET_BY_CONFIG__",
+  "FilterGenotypes.run_qc": "__SET_BY_CONFIG__",
+  "FilterGenotypes.qc_bcftools_preprocessing_options": "__SET_BY_CONFIG__",
+  "FilterGenotypes.qc_sv_per_shard": "__SET_BY_CONFIG__",
+  "FilterGenotypes.qc_samples_per_shard": "__SET_BY_CONFIG__",
+  "FilterGenotypes.runtime_override_plot_qc_per_family": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "FilterGenotypes.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "FilterGenotypes.vcf": "__INJECT_VCF__",
+  "FilterGenotypes.output_prefix": "__INJECT_OUTPUT_PREFIX__",
+  "FilterGenotypes.ploidy_table": "__INJECT_PLOIDY_TABLE__",
+  "FilterGenotypes.ped_file": "__INJECT_PED_FILE__"
+}

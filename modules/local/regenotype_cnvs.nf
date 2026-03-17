@@ -10,7 +10,10 @@ process GATKSV_REGENOTYPECNVS {
     tuple val(cohort_name), path(depth_vcfs), path(merge_batch_sites_vcf), path(batch_depth_vcfs), path(coveragefiles), path(coveragefile_idxs), path(medianfiles), path(genotyping_rd_table), path(ploidy_tables), val(batches), path(regeno_coverage_medians)
 
     output:
-    tuple val(cohort_name), path("**/*.depth.regeno_final.vcf.gz"), emit: regenotyped_depth_vcfs
+    tuple val(cohort_name), path("${cohort_name}/*.depth.regeno_final.vcf.gz"), emit: regenotyped_depth_vcfs
+    tuple val(cohort_name), path("${cohort_name}/*.depth.regeno_final.vcf.gz.tbi"), emit: regenotyped_depth_vcf_indexes
+    tuple val(cohort_name), path("${cohort_name}/regeno_num_lines.txt"), emit: number_regenotyped_file
+    tuple val(cohort_name), path("${cohort_name}/regeno_filtered_num_lines.txt"), emit: number_regenotyped_filtered_file
     path "versions.yml", emit: versions
 
     script:
@@ -59,29 +62,54 @@ process GATKSV_REGENOTYPECNVS {
     }
 
     """
-    render_json_template.py \\
-        --template ${template_path} \\
-        --out regenotype_cnvs_inputs.json \\
-        --static-json '${static_json}' \\
+    render_json_template.py \
+        --template ${template_path} \
+        --out regenotype_cnvs_inputs.json \
+        --static-json '${static_json}' \
         --merge-json-file regenotype_cnvs_dynamic.json
 
     unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
 
-    java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
-        run ${params.regenotypecnvs_wdl} \\
-        -i regenotype_cnvs_inputs.json \\
+    java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \
+        run ${params.regenotypecnvs_wdl} \
+        -i regenotype_cnvs_inputs.json \
         -p ${params.deps_zip}
+
+    mkdir -p "${cohort_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${cohort_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/RegenotypeCNVs -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected RegenotypeCNVs output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "*.depth.regeno_final.vcf.gz" 1
+    copy_outputs "*.depth.regeno_final.vcf.gz.tbi" 1
+    copy_outputs "regeno_num_lines.txt" 1
+    copy_outputs "regeno_filtered_num_lines.txt" 1
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
+        java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*"//; s/".*\$//')
     END_VERSIONS
     """
 
     stub:
     """
-    mkdir -p regenotype_cnvs_results/
-    touch regenotype_cnvs_results/${cohort_name}.depth.regeno_final.vcf.gz
+    mkdir -p ${cohort_name}
+    touch ${cohort_name}/${cohort_name}.depth.regeno_final.vcf.gz
+    touch ${cohort_name}/${cohort_name}.depth.regeno_final.vcf.gz.tbi
+    touch ${cohort_name}/regeno_num_lines.txt
+    touch ${cohort_name}/regeno_filtered_num_lines.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

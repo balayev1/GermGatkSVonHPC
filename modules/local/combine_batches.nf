@@ -10,10 +10,12 @@ process GATKSV_COMBINEBATCHES {
     tuple val(cohort_name), val(batches), path(ped_file), path(pesr_vcfs), path(depth_vcfs)
 
     output:
-    tuple val(cohort_name), path("**/*.combine_batches.*.svtk_formatted.vcf.gz"), emit: combined_vcfs
-    tuple val(cohort_name), path("**/*.high_sr_background.txt"), emit: cluster_background_fail_lists
-    tuple val(cohort_name), path("**/*.bothsides_sr_support.txt"), emit: cluster_bothside_pass_lists
-    tuple val(cohort_name), path("**/*.combine_batches.concat_all_contigs.vcf.gz"), emit: combine_batches_merged_vcf, optional: true
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.*.svtk_formatted.vcf.gz"), emit: combined_vcfs
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.*.svtk_formatted.vcf.gz.tbi"), emit: combined_vcf_indexes
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.*.high_sr_background.txt"), emit: cluster_background_fail_lists
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.*.bothsides_sr_support.txt"), emit: cluster_bothside_pass_lists
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.concat_all_contigs.vcf.gz"), emit: combine_batches_merged_vcf, optional: true
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.combine_batches.concat_all_contigs.vcf.gz.tbi"), emit: combine_batches_merged_vcf_index, optional: true
     path "versions.yml", emit: versions
 
     script:
@@ -48,18 +50,42 @@ process GATKSV_COMBINEBATCHES {
     }
 
     """
-    render_json_template.py \\
-        --template ${template_path} \\
-        --out combine_batches_inputs.json \\
-        --static-json '${static_json}' \\
+    render_json_template.py \
+        --template ${template_path} \
+        --out combine_batches_inputs.json \
+        --static-json '${static_json}' \
         --merge-json-file combine_batches_dynamic.json
 
     unset PYTHONHOME PYTHONPATH CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_SHLVL
 
-    java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \\
-        run ${params.combinebatches_wdl} \\
-        -i combine_batches_inputs.json \\
+    java -Xmx${avail_mem}M -Dconfig.file=${params.cromwell_config} -jar ${params.cromwell_jar} \
+        run ${params.combinebatches_wdl} \
+        -i combine_batches_inputs.json \
         -p ${params.deps_zip}
+
+    mkdir -p "${cohort_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${cohort_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/CombineBatches -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected CombineBatches output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "${cohort_id}.combine_batches.*.svtk_formatted.vcf.gz" 1
+    copy_outputs "${cohort_id}.combine_batches.*.svtk_formatted.vcf.gz.tbi" 1
+    copy_outputs "${cohort_id}.combine_batches.*.high_sr_background.txt" 1
+    copy_outputs "${cohort_id}.combine_batches.*.bothsides_sr_support.txt" 1
+    copy_outputs "${cohort_id}.combine_batches.concat_all_contigs.vcf.gz" 0
+    copy_outputs "${cohort_id}.combine_batches.concat_all_contigs.vcf.gz.tbi" 0
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -69,11 +95,13 @@ process GATKSV_COMBINEBATCHES {
 
     stub:
     """
-    mkdir -p combine_batches_results/
-    touch combine_batches_results/${cohort_name}.combine_batches.chr1.svtk_formatted.vcf.gz
-    touch combine_batches_results/${cohort_name}.high_sr_background.txt
-    touch combine_batches_results/${cohort_name}.bothsides_sr_support.txt
-    touch combine_batches_results/${cohort_name}.combine_batches.concat_all_contigs.vcf.gz
+    mkdir -p ${cohort_name}
+    touch ${cohort_name}/${cohort_name}.combine_batches.chr1.svtk_formatted.vcf.gz
+    touch ${cohort_name}/${cohort_name}.combine_batches.chr1.svtk_formatted.vcf.gz.tbi
+    touch ${cohort_name}/${cohort_name}.combine_batches.chr1.high_sr_background.txt
+    touch ${cohort_name}/${cohort_name}.combine_batches.chr1.bothsides_sr_support.txt
+    touch ${cohort_name}/${cohort_name}.combine_batches.concat_all_contigs.vcf.gz
+    touch ${cohort_name}/${cohort_name}.combine_batches.concat_all_contigs.vcf.gz.tbi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

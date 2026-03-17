@@ -10,18 +10,18 @@ process GATKSV_FILTERBATCHSITES {
     tuple val(batch_name), val(cohort), path(depth_vcf), path(manta_vcf), path(wham_vcf), path(scramble_vcf), path(evidence_metrics)
 
     output:
-    tuple val(batch_name), path("**/*.depth.with_evidence.vcf.gz"), emit: sites_filtered_depth_vcf
-    tuple val(batch_name), path("**/*.manta.with_evidence.vcf.gz"), emit: sites_filtered_manta_vcf
-    tuple val(batch_name), path("**/*.scramble.with_evidence.vcf.gz"), emit: sites_filtered_scramble_vcf
-    tuple val(batch_name), path("**/*.wham.with_evidence.vcf.gz"), emit: sites_filtered_wham_vcf
-    tuple val(batch_name), path("**/${batch_name}.cutoffs"), emit: cutoffs
-    tuple val(batch_name), path("**/${batch_name}.scores"), emit: scores
-    tuple val(batch_name), path("**/${batch_name}.RF_intermediate_files.tar.gz"), emit: rf_intermediates
-    tuple val(batch_name), path("**/*.svcounts.txt"), emit: sv_counts
-    tuple val(batch_name), path("**/*.all_SVTYPEs.counts_per_sample.png"), emit: sv_count_plots
-    tuple val(batch_name), path("**/*.outliers_preview.samples.txt"), emit: outlier_samples_preview
-    tuple val(batch_name), path("**/*.outliers_preview_with_reason.samples.tsv"), emit: outlier_samples_with_reason
-    tuple val(batch_name), path("num_outliers.txt"), emit: num_outlier_samples
+    tuple val(batch_name), path("${batch_name}/${batch_name}.depth.with_evidence.vcf.gz"), emit: sites_filtered_depth_vcf
+    tuple val(batch_name), path("${batch_name}/${batch_name}.manta.with_evidence.vcf.gz"), emit: sites_filtered_manta_vcf
+    tuple val(batch_name), path("${batch_name}/${batch_name}.scramble.with_evidence.vcf.gz"), emit: sites_filtered_scramble_vcf
+    tuple val(batch_name), path("${batch_name}/${batch_name}.wham.with_evidence.vcf.gz"), emit: sites_filtered_wham_vcf
+    tuple val(batch_name), path("${batch_name}/${batch_name}.cutoffs"), emit: cutoffs
+    tuple val(batch_name), path("${batch_name}/${batch_name}.scores"), emit: scores
+    tuple val(batch_name), path("${batch_name}/${batch_name}.RF_intermediate_files.tar.gz"), emit: RF_intermediate_files
+    tuple val(batch_name), path("${batch_name}/*.with_evidence.svcounts.txt"), emit: sv_counts
+    tuple val(batch_name), path("${batch_name}/*.with_evidence.all_SVTYPEs.counts_per_sample.png"), emit: sv_count_plots
+    tuple val(batch_name), path("${batch_name}/${batch_name}.outliers_preview.samples.txt"), emit: sites_filtered_outlier_samples_preview
+    tuple val(batch_name), path("${batch_name}/${batch_name}.outliers_preview_with_reason.samples.tsv"), emit: sites_filtered_outlier_samples_with_reason
+    tuple val(batch_name), path("${batch_name}/num_outliers.txt"), emit: num_outlier_samples
     path "versions.yml", emit: versions
 
     script:
@@ -69,6 +69,36 @@ process GATKSV_FILTERBATCHSITES {
         -i filter_batch_sites_inputs.json \\
         -p ${params.deps_zip}
 
+    mkdir -p "${batch_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${batch_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/FilterBatchSites -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected FilterBatchSites output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "${batch_id}.depth.with_evidence.vcf.gz" 1
+    copy_outputs "${batch_id}.manta.with_evidence.vcf.gz" 1
+    copy_outputs "${batch_id}.scramble.with_evidence.vcf.gz" 1
+    copy_outputs "${batch_id}.wham.with_evidence.vcf.gz" 1
+    copy_outputs "${batch_id}.cutoffs" 1
+    copy_outputs "${batch_id}.scores" 1
+    copy_outputs "${batch_id}.RF_intermediate_files.tar.gz" 1
+    copy_outputs "*.with_evidence.svcounts.txt" 1
+    copy_outputs "*.with_evidence.all_SVTYPEs.counts_per_sample.png" 1
+    copy_outputs "${batch_id}.outliers_preview.samples.txt" 1
+    copy_outputs "${batch_id}.outliers_preview_with_reason.samples.tsv" 1
+    copy_outputs "num_outliers.txt" 1
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -77,20 +107,19 @@ process GATKSV_FILTERBATCHSITES {
 
     stub:
     """
-    mkdir -p call-stub
-    touch call-stub/.stub
-    touch ${batch_name}.depth.with_evidence.vcf.gz
-    touch ${batch_name}.manta.with_evidence.vcf.gz
-    touch ${batch_name}.scramble.with_evidence.vcf.gz
-    touch ${batch_name}.wham.with_evidence.vcf.gz
-    touch ${batch_name}.cutoffs
-    touch ${batch_name}.scores
-    touch ${batch_name}.RF_intermediate_files.tar.gz
-    touch ${batch_name}.svcounts.txt
-    touch ${batch_name}.all_SVTYPEs.counts_per_sample.png
-    touch ${batch_name}.outliers_preview.samples.txt
-    touch ${batch_name}.outliers_preview_with_reason.samples.tsv
-    touch num_outliers.txt
+    mkdir -p ${batch_name}
+    touch ${batch_name}/${batch_name}.depth.with_evidence.vcf.gz
+    touch ${batch_name}/${batch_name}.manta.with_evidence.vcf.gz
+    touch ${batch_name}/${batch_name}.scramble.with_evidence.vcf.gz
+    touch ${batch_name}/${batch_name}.wham.with_evidence.vcf.gz
+    touch ${batch_name}/${batch_name}.cutoffs
+    touch ${batch_name}/${batch_name}.scores
+    touch ${batch_name}/${batch_name}.RF_intermediate_files.tar.gz
+    touch ${batch_name}/${batch_name}.with_evidence.svcounts.txt
+    touch ${batch_name}/${batch_name}.with_evidence.all_SVTYPEs.counts_per_sample.png
+    touch ${batch_name}/${batch_name}.outliers_preview.samples.txt
+    touch ${batch_name}/${batch_name}.outliers_preview_with_reason.samples.tsv
+    touch ${batch_name}/num_outliers.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

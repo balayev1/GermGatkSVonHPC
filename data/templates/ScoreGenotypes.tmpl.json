@@ -1,0 +1,11 @@
+{
+  "ScoreGenotypes.gq_recalibrator_model_file": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.recalibrate_gq_args": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.genome_tracks": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.linux_docker": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.gatk_docker": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "ScoreGenotypes.vcf": "__INJECT_VCF__",
+  "ScoreGenotypes.output_prefix": "__INJECT_OUTPUT_PREFIX__"
+}

@@ -1,0 +1,20 @@
+{
+  "GenotypeComplexVariants.bin_exclude": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.contig_list": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.ref_dict": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.merge_vcfs": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.records_per_shard": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.min_ddup_thresh": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.linux_docker": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "GenotypeComplexVariants.cohort_name": "__INJECT_COHORT_NAME__",
+  "GenotypeComplexVariants.batches": "__INJECT_BATCHES__",
+  "GenotypeComplexVariants.depth_vcfs": "__INJECT_DEPTH_VCFS__",
+  "GenotypeComplexVariants.complex_resolve_vcfs": "__INJECT_COMPLEX_RESOLVE_VCFS__",
+  "GenotypeComplexVariants.complex_resolve_vcf_indexes": "__INJECT_COMPLEX_RESOLVE_VCF_INDEXES__",
+  "GenotypeComplexVariants.ped_file": "__INJECT_PED_FILE__",
+  "GenotypeComplexVariants.bincov_files": "__INJECT_BINCOV_FILES__",
+  "GenotypeComplexVariants.genotyping_rd_tables": "__INJECT_GENOTYPING_RD_TABLES__",
+  "GenotypeComplexVariants.median_coverage_files": "__INJECT_MEDIAN_COVERAGE_FILES__"
+}

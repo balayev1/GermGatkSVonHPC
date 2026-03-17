@@ -10,7 +10,8 @@ process GATKSV_MERGEBATCHSITES {
     tuple val(cohort_name), path(ploidy_tables), path(depth_vcfs), path(pesr_vcfs)
 
     output:
-    tuple val(cohort_name), path("**/*.merge_batch_sites.vcf.gz"), emit: merge_batch_sites_vcf
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.merge_batch_sites.vcf.gz"), emit: merge_batch_sites_vcf
+    tuple val(cohort_name), path("${cohort_name}/${cohort_name}.merge_batch_sites.vcf.gz.tbi"), emit: merge_batch_sites_vcf_index
     path "versions.yml", emit: versions
 
     script:
@@ -60,6 +61,26 @@ process GATKSV_MERGEBATCHSITES {
         -i merge_batch_sites_inputs.json \\
         -p ${params.deps_zip}
 
+    mkdir -p "${cohort_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${cohort_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/MergeBatchSites -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected MergeBatchSites output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "${cohort_id}.merge_batch_sites.vcf.gz" 1
+    copy_outputs "${cohort_id}.merge_batch_sites.vcf.gz.tbi" 1
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -68,9 +89,9 @@ process GATKSV_MERGEBATCHSITES {
 
     stub:
     """
-    mkdir -p call-stub
-    touch call-stub/.stub
-    touch ${cohort_name}.merge_batch_sites.vcf.gz
+    mkdir -p ${cohort_name}
+    touch ${cohort_name}/${cohort_name}.merge_batch_sites.vcf.gz
+    touch ${cohort_name}/${cohort_name}.merge_batch_sites.vcf.gz.tbi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

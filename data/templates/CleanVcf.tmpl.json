@@ -1,0 +1,20 @@
+{
+  "CleanVcf.contig_list": "__SET_BY_CONFIG__",
+  "CleanVcf.allosome_fai": "__SET_BY_CONFIG__",
+  "CleanVcf.HERVK_reference": "__SET_BY_CONFIG__",
+  "CleanVcf.LINE1_reference": "__SET_BY_CONFIG__",
+  "CleanVcf.intron_reference": "__SET_BY_CONFIG__",
+  "CleanVcf.chr_x": "__SET_BY_CONFIG__",
+  "CleanVcf.chr_y": "__SET_BY_CONFIG__",
+  "CleanVcf.primary_contigs_list": "__SET_BY_CONFIG__",
+  "CleanVcf.run_module_metrics": "__SET_BY_CONFIG__",
+  "CleanVcf.gatk_docker": "__SET_BY_CONFIG__",
+  "CleanVcf.linux_docker": "__SET_BY_CONFIG__",
+  "CleanVcf.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "CleanVcf.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "CleanVcf.cohort_name": "__INJECT_COHORT_NAME__",
+  "CleanVcf.ped_file": "__INJECT_PED_FILE__",
+  "CleanVcf.complex_genotype_vcfs": "__INJECT_COMPLEX_GENOTYPE_VCFS__",
+  "CleanVcf.complex_resolve_bothside_pass_list": "__INJECT_COMPLEX_RESOLVE_BOTHSIDE_PASS_LIST__",
+  "CleanVcf.complex_resolve_background_fail_list": "__INJECT_COMPLEX_RESOLVE_BACKGROUND_FAIL_LIST__"
+}

@@ -348,7 +348,7 @@ workflow SAMPLE_PROCESSING {
         }
         .join(ch_updated_ped_by_batch)
         .map { source_batch_key, model_batch_key, cohort, sample_ids, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files, ped_file ->
-            tuple(model_batch_key, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
+            tuple(model_batch_key, cohort, sample_ids, ped_file, counts_files, pe_files, sr_files, sd_files, manta_files, wham_files, scramble_files)
         }
 
     emit:

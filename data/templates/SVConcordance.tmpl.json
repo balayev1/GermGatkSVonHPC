@@ -1,0 +1,9 @@
+{
+  "SVConcordance.gatk_docker": "__SET_BY_CONFIG__",
+  "SVConcordance.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "SVConcordance.contig_list": "__SET_BY_CONFIG__",
+  "SVConcordance.reference_dict": "__SET_BY_CONFIG__",
+  "SVConcordance.eval_vcf": "__INJECT_EVAL_VCF__",
+  "SVConcordance.truth_vcf": "__INJECT_TRUTH_VCF__",
+  "SVConcordance.output_prefix": "__INJECT_OUTPUT_PREFIX__"
+}

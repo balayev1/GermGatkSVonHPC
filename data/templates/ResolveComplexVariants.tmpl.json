@@ -1,0 +1,17 @@
+{
+  "ResolveComplexVariants.contig_list": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.merge_vcfs": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.max_shard_size": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.cytobands": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.mei_bed": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.pe_exclude_list": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.ref_dict": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "ResolveComplexVariants.cohort_name": "__INJECT_COHORT_NAME__",
+  "ResolveComplexVariants.cluster_vcfs": "__INJECT_CLUSTER_VCFS__",
+  "ResolveComplexVariants.cluster_bothside_pass_lists": "__INJECT_CLUSTER_BOTHSIDE_PASS_LISTS__",
+  "ResolveComplexVariants.cluster_background_fail_lists": "__INJECT_CLUSTER_BACKGROUND_FAIL_LISTS__",
+  "ResolveComplexVariants.disc_files": "__INJECT_DISC_FILES__",
+  "ResolveComplexVariants.rf_cutoff_files": "__INJECT_RF_CUTOFF_FILES__"
+}

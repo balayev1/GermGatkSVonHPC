@@ -10,25 +10,37 @@ process GATKSV_GATHERBATCHEVIDENCE {
     tuple val(batch_name), val(sample_ids), path(ped_file), path(count_files), path(pe_files), path(sr_files), path(sd_files), path(manta_vcf_files), path(wham_vcf_files), path(scramble_vcf_files), path(gcnv_model_tars), path(contig_ploidy_model_tar)
 
     output:
-    tuple val(batch_name), path("**/${batch_name}.baf.txt.gz"), emit: merged_BAF
-    tuple val(batch_name), path("**/${batch_name}.sr.txt.gz"), emit: merged_SR
-    tuple val(batch_name), path("**/${batch_name}.pe.txt.gz"), emit: merged_PE
-    tuple val(batch_name), path("**/${batch_name}.RD.txt.gz"), emit: merged_bincov
-    tuple val(batch_name), path("**/${batch_name}.RD.txt.gz.tbi"), emit: merged_bincov_index
-    tuple val(batch_name), path("**/*.del.bed"), emit: merged_dels
-    tuple val(batch_name), path("**/*.dup.bed"), emit: merged_dups
-    tuple val(batch_name), path("**/*_medianCov.transposed.bed"), emit: median_cov
-    tuple val(batch_name), path("**/*.manta_std.tar.gz"), emit: std_manta_vcf_tar
-    tuple val(batch_name), path("**/*.wham_std.tar.gz"), emit: std_wham_vcf_tar
-    tuple val(batch_name), path("**/*.scramble_std.tar.gz"), emit: std_scramble_vcf_tar
-    tuple val(batch_name), path("**/${batch_name}_ploidy_matrix.bed.gz"), emit: batch_ploidy_matrix, optional: true
-    tuple val(batch_name), path("**/${batch_name}_ploidy_plots.tar.gz"), emit: batch_ploidy_plots, optional: true
-    tuple val(batch_name), path("**/${batch_name}.BAF.QC_matrix.txt"), emit: baf_qc_stats, optional: true
-    tuple val(batch_name), path("**/${batch_name}.RD.QC_matrix.txt"), emit: rd_qc_stats, optional: true
-    tuple val(batch_name), path("**/${batch_name}.PE.QC_matrix.txt"), emit: pe_qc_stats, optional: true
-    tuple val(batch_name), path("**/${batch_name}.SR.QC_matrix.txt"), emit: sr_qc_stats, optional: true
-    tuple val(batch_name), path("**/${batch_name}.00_matrix_FC_QC.png"), emit: plot_matrix_qc, optional: true
-    tuple val(batch_name), path("**/tloc_*.vcf.gz"), emit: manta_tloc, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.baf.txt.gz"), emit: merged_BAF
+    tuple val(batch_name), path("${batch_name}/${batch_name}.baf.txt.gz.tbi"), emit: merged_BAF_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.sr.txt.gz"), emit: merged_SR
+    tuple val(batch_name), path("${batch_name}/${batch_name}.sr.txt.gz.tbi"), emit: merged_SR_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.pe.txt.gz"), emit: merged_PE
+    tuple val(batch_name), path("${batch_name}/${batch_name}.pe.txt.gz.tbi"), emit: merged_PE_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.RD.txt.gz"), emit: merged_bincov
+    tuple val(batch_name), path("${batch_name}/${batch_name}.RD.txt.gz.tbi"), emit: merged_bincov_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DEL.bed.gz"), emit: merged_dels
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DUP.bed.gz"), emit: merged_dups
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DEL.header.bed.gz"), emit: cnmops_del
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DEL.header.bed.gz.tbi"), emit: cnmops_del_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DUP.header.bed.gz"), emit: cnmops_dup
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DUP.header.bed.gz.tbi"), emit: cnmops_dup_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DEL.large.bed.gz"), emit: cnmops_large_del
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DEL.large.bed.gz.tbi"), emit: cnmops_large_del_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DUP.large.bed.gz"), emit: cnmops_large_dup
+    tuple val(batch_name), path("${batch_name}/${batch_name}.DUP.large.bed.gz.tbi"), emit: cnmops_large_dup_index
+    tuple val(batch_name), path("${batch_name}/${batch_name}_medianCov.transposed.bed"), emit: median_cov
+    tuple val(batch_name), path("${batch_name}/${batch_name}.manta.std.tar.gz"), emit: std_manta_vcf_tar
+    tuple val(batch_name), path("${batch_name}/${batch_name}.wham.std.tar.gz"), emit: std_wham_vcf_tar
+    tuple val(batch_name), path("${batch_name}/${batch_name}.scramble.std.tar.gz"), emit: std_scramble_vcf_tar
+    tuple val(batch_name), path("${batch_name}/${batch_name}_ploidy_matrix.bed.gz"), emit: batch_ploidy_matrix, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}_ploidy_plots.tar.gz"), emit: batch_ploidy_plots, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.BAF.QC_matrix.txt"), emit: BAF_stats, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.RD.QC_matrix.txt"), emit: RD_stats, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.PE.QC_matrix.txt"), emit: PE_stats, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.SR.QC_matrix.txt"), emit: SR_stats, optional: true
+    tuple val(batch_name), path("${batch_name}/${batch_name}.00_matrix_FC_QC.png"), emit: Matrix_QC_plot, optional: true
+    tuple val(batch_name), path("${batch_name}/GatherBatchEvidence.${batch_name}.metrics.tsv"), emit: metrics_file_batchevidence, optional: true
+    tuple val(batch_name), path("${batch_name}/tloc_*.manta.complex.vcf.gz"), emit: manta_tloc, optional: true
     path "versions.yml", emit: versions
 
     script:
@@ -108,6 +120,55 @@ process GATKSV_GATHERBATCHEVIDENCE {
         -i gather_batch_evidence_inputs.json \\
         -p ${params.deps_zip}
 
+    mkdir -p "${batch_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${batch_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/GatherBatchEvidence -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected GatherBatchEvidence output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "${batch_id}.baf.txt.gz" 1
+    copy_outputs "${batch_id}.baf.txt.gz.tbi" 1
+    copy_outputs "${batch_id}.sr.txt.gz" 1
+    copy_outputs "${batch_id}.sr.txt.gz.tbi" 1
+    copy_outputs "${batch_id}.pe.txt.gz" 1
+    copy_outputs "${batch_id}.pe.txt.gz.tbi" 1
+    copy_outputs "${batch_id}.RD.txt.gz" 1
+    copy_outputs "${batch_id}.RD.txt.gz.tbi" 1
+    copy_outputs "${batch_id}.DEL.bed.gz" 1
+    copy_outputs "${batch_id}.DUP.bed.gz" 1
+    copy_outputs "${batch_id}.DEL.header.bed.gz" 1
+    copy_outputs "${batch_id}.DEL.header.bed.gz.tbi" 1
+    copy_outputs "${batch_id}.DUP.header.bed.gz" 1
+    copy_outputs "${batch_id}.DUP.header.bed.gz.tbi" 1
+    copy_outputs "${batch_id}.DEL.large.bed.gz" 1
+    copy_outputs "${batch_id}.DEL.large.bed.gz.tbi" 1
+    copy_outputs "${batch_id}.DUP.large.bed.gz" 1
+    copy_outputs "${batch_id}.DUP.large.bed.gz.tbi" 1
+    copy_outputs "${batch_id}_medianCov.transposed.bed" 1
+    copy_outputs "${batch_id}.manta.std.tar.gz" 1
+    copy_outputs "${batch_id}.wham.std.tar.gz" 1
+    copy_outputs "${batch_id}.scramble.std.tar.gz" 1
+    copy_outputs "${batch_id}_ploidy_matrix.bed.gz" 0
+    copy_outputs "${batch_id}_ploidy_plots.tar.gz" 0
+    copy_outputs "${batch_id}.BAF.QC_matrix.txt" 0
+    copy_outputs "${batch_id}.RD.QC_matrix.txt" 0
+    copy_outputs "${batch_id}.PE.QC_matrix.txt" 0
+    copy_outputs "${batch_id}.SR.QC_matrix.txt" 0
+    copy_outputs "${batch_id}.00_matrix_FC_QC.png" 0
+    copy_outputs "GatherBatchEvidence.${batch_id}.metrics.tsv" 0
+    copy_outputs "tloc_*.manta.complex.vcf.gz" 0
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -116,19 +177,38 @@ process GATKSV_GATHERBATCHEVIDENCE {
 
     stub:
     """
-    mkdir -p call-stub/execution
-    touch call-stub/.stub
-    touch call-stub/execution/${batch_name}.baf.txt.gz
-    touch call-stub/execution/${batch_name}.sr.txt.gz
-    touch call-stub/execution/${batch_name}.pe.txt.gz
-    touch call-stub/execution/${batch_name}.RD.txt.gz
-    touch call-stub/execution/${batch_name}.RD.txt.gz.tbi
-    touch call-stub/execution/${batch_name}.del.bed
-    touch call-stub/execution/${batch_name}.dup.bed
-    touch call-stub/execution/${batch_name}_medianCov.transposed.bed
-    touch call-stub/execution/${batch_name}.manta_std.tar.gz
-    touch call-stub/execution/${batch_name}.wham_std.tar.gz
-    touch call-stub/execution/${batch_name}.scramble_std.tar.gz
+    mkdir -p ${batch_name}
+    touch ${batch_name}/${batch_name}.baf.txt.gz
+    touch ${batch_name}/${batch_name}.baf.txt.gz.tbi
+    touch ${batch_name}/${batch_name}.sr.txt.gz
+    touch ${batch_name}/${batch_name}.sr.txt.gz.tbi
+    touch ${batch_name}/${batch_name}.pe.txt.gz
+    touch ${batch_name}/${batch_name}.pe.txt.gz.tbi
+    touch ${batch_name}/${batch_name}.RD.txt.gz
+    touch ${batch_name}/${batch_name}.RD.txt.gz.tbi
+    touch ${batch_name}/${batch_name}.DEL.bed.gz
+    touch ${batch_name}/${batch_name}.DUP.bed.gz
+    touch ${batch_name}/${batch_name}.DEL.header.bed.gz
+    touch ${batch_name}/${batch_name}.DEL.header.bed.gz.tbi
+    touch ${batch_name}/${batch_name}.DUP.header.bed.gz
+    touch ${batch_name}/${batch_name}.DUP.header.bed.gz.tbi
+    touch ${batch_name}/${batch_name}.DEL.large.bed.gz
+    touch ${batch_name}/${batch_name}.DEL.large.bed.gz.tbi
+    touch ${batch_name}/${batch_name}.DUP.large.bed.gz
+    touch ${batch_name}/${batch_name}.DUP.large.bed.gz.tbi
+    touch ${batch_name}/${batch_name}_medianCov.transposed.bed
+    touch ${batch_name}/${batch_name}.manta.std.tar.gz
+    touch ${batch_name}/${batch_name}.wham.std.tar.gz
+    touch ${batch_name}/${batch_name}.scramble.std.tar.gz
+    touch ${batch_name}/${batch_name}_ploidy_matrix.bed.gz
+    touch ${batch_name}/${batch_name}_ploidy_plots.tar.gz
+    touch ${batch_name}/${batch_name}.BAF.QC_matrix.txt
+    touch ${batch_name}/${batch_name}.RD.QC_matrix.txt
+    touch ${batch_name}/${batch_name}.PE.QC_matrix.txt
+    touch ${batch_name}/${batch_name}.SR.QC_matrix.txt
+    touch ${batch_name}/${batch_name}.00_matrix_FC_QC.png
+    touch ${batch_name}/GatherBatchEvidence.${batch_name}.metrics.tsv
+    touch ${batch_name}/tloc_001.manta.complex.vcf.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

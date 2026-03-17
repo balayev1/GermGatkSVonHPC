@@ -4,7 +4,7 @@ process SAMPLE_QC {
     tag "${cohort}"
     label 'process_single'
 
-    container 'docker://rocker/tidyverse:latest'
+    container 'docker://rocker/tidyverse:4.5.3'
 
     input:
     tuple val(cohort), val(sample_ids), path(insert_size_metrics), path(ped_file), path(evidence_qc_table), path(sample_sex_assignments)

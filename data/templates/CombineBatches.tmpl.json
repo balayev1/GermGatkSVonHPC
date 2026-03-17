@@ -1,5 +1,6 @@
 {
   "CombineBatches.contig_list": "__SET_BY_CONFIG__",
+  "CombineBatches.merge_vcfs": "__SET_BY_CONFIG__",
   "CombineBatches.clustering_config_part1" : "__SET_BY_CONFIG__",
   "CombineBatches.stratification_config_part1" : "__SET_BY_CONFIG__",
   "CombineBatches.clustering_config_part2" : "__SET_BY_CONFIG__",

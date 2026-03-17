@@ -34,6 +34,7 @@ include { INPUT_CHECK              } from '../subworkflows/local/input_check'
 include { SAMPLE_PROCESSING        } from '../subworkflows/local/sample_processing'
 include { BATCH_PROCESSING         } from '../subworkflows/local/batch_processing'
 include { JOINT_COHORT_CALLING     } from '../subworkflows/local/joint_cohort_calling'
+include { VCF_REFINEMENT         } from '../subworkflows/local/vcf_refinement'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,4 +89,24 @@ workflow GATKSVCALLER {
         SAMPLE_PROCESSING.out.updated_ped
     )
     ch_versions = ch_versions.mix(JOINT_COHORT_CALLING.out.versions)
+
+    VCF_REFINEMENT (
+        BATCH_PROCESSING.out.batch_cohort,
+        JOINT_COHORT_CALLING.out.cleaned_vcf,
+        BATCH_PROCESSING.out.merged_PE,
+        BATCH_PROCESSING.out.merged_PE_index,
+        BATCH_PROCESSING.out.merged_dels,
+        BATCH_PROCESSING.out.merged_dups,
+        BATCH_PROCESSING.out.filtered_batch_samples_file,
+        BATCH_PROCESSING.out.clustered_depth_vcf,
+        BATCH_PROCESSING.out.clustered_depth_vcf_index,
+        BATCH_PROCESSING.out.clustered_manta_vcf,
+        BATCH_PROCESSING.out.clustered_manta_vcf_index,
+        BATCH_PROCESSING.out.clustered_wham_vcf,
+        BATCH_PROCESSING.out.clustered_wham_vcf_index,
+        BATCH_PROCESSING.out.clustered_scramble_vcf,
+        BATCH_PROCESSING.out.clustered_scramble_vcf_index,
+        SAMPLE_PROCESSING.out.updated_ped
+    )
+    ch_versions = ch_versions.mix(VCF_REFINEMENT.out.versions)
 }

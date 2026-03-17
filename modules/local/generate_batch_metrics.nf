@@ -10,8 +10,9 @@ process GATKSV_GENERATEBATCHMETRICS {
     tuple val(batch_name), path(ped_file), path(pe_file), path(baf_file), path(rd_file), path(sr_file), path(median_file), path(clustered_depth_vcf), path(clustered_manta_vcf), path(clustered_wham_vcf), path(clustered_scramble_vcf), val(outlier_sample_ids)
 
     output:
-    tuple val(batch_name), path("**/*.metrics.tsv"), emit: metrics
-    tuple val(batch_name), path("**/${batch_name}.ploidy*.tsv"), emit: ploidy_table
+    tuple val(batch_name), path("${batch_name}/${batch_name}.batch_metrics.aggregate_tests.metrics.tsv"), emit: metrics
+    tuple val(batch_name), path("${batch_name}/GenerateBatchMetrics.${batch_name}.metrics.tsv"), emit: metrics_file_batchmetrics
+    tuple val(batch_name), path("${batch_name}/${batch_name}.ploidy.tsv"), emit: ploidy_table
     path "versions.yml", emit: versions
 
     script:
@@ -63,6 +64,27 @@ process GATKSV_GENERATEBATCHMETRICS {
         -i generate_batch_metrics_inputs.json \\
         -p ${params.deps_zip}
 
+    mkdir -p "${batch_id}"
+
+    copy_outputs() {
+        local pattern="\$1"
+        local required="\${2:-1}"
+        local found=0
+        while IFS= read -r -d '' source; do
+            found=1
+            cp -L "\$source" "${batch_id}/\$(basename "\$source")"
+        done < <(find cromwell-executions/GenerateBatchMetrics -type f -name "\${pattern}" -print0)
+
+        if [[ "\$required" -eq 1 && "\$found" -eq 0 ]]; then
+            echo "ERROR: Expected GenerateBatchMetrics output(s) not found for pattern: \${pattern}" >&2
+            exit 1
+        fi
+    }
+
+    copy_outputs "${batch_id}.batch_metrics.aggregate_tests.metrics.tsv" 1
+    copy_outputs "GenerateBatchMetrics.${batch_id}.metrics.tsv" 1
+    copy_outputs "${batch_id}.ploidy.tsv" 1
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         java: \$(java -version 2>&1 | head -n 1 | sed 's/^.*version[[:space:]]*\"//; s/\".*\$//')
@@ -71,10 +93,10 @@ process GATKSV_GENERATEBATCHMETRICS {
 
     stub:
     """
-    mkdir -p call-stub
-    touch call-stub/.stub
-    touch ${batch_name}.metrics.tsv
-    touch ${batch_name}.ploidy_table.tsv
+    mkdir -p ${batch_name}
+    touch ${batch_name}/${batch_name}.batch_metrics.aggregate_tests.metrics.tsv
+    touch ${batch_name}/GenerateBatchMetrics.${batch_name}.metrics.tsv
+    touch ${batch_name}/${batch_name}.ploidy.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

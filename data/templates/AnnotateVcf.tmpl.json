@@ -1,0 +1,22 @@
+{
+  "AnnotateVcf.protein_coding_gtf": "__SET_BY_CONFIG__",
+  "AnnotateVcf.noncoding_bed": "__SET_BY_CONFIG__",
+  "AnnotateVcf.external_af_ref_bed": "__SET_BY_CONFIG__",
+  "AnnotateVcf.external_af_ref_prefix": "__SET_BY_CONFIG__",
+  "AnnotateVcf.external_af_population": "__SET_BY_CONFIG__",
+  "AnnotateVcf.par_bed": "__SET_BY_CONFIG__",
+  "AnnotateVcf.contig_list": "__SET_BY_CONFIG__",
+  "AnnotateVcf.promoter_window": "__SET_BY_CONFIG__",
+  "AnnotateVcf.max_breakend_as_cnv_length": "__SET_BY_CONFIG__",
+  "AnnotateVcf.sample_keep_list": "__SET_BY_CONFIG__",
+  "AnnotateVcf.sample_pop_assignments": "__SET_BY_CONFIG__",
+  "AnnotateVcf.allosomes_list": "__SET_BY_CONFIG__",
+  "AnnotateVcf.svannotate_additional_args": "__SET_BY_CONFIG__",
+  "AnnotateVcf.sv_per_shard": "__SET_BY_CONFIG__",
+  "AnnotateVcf.gatk_docker": "__SET_BY_CONFIG__",
+  "AnnotateVcf.sv_base_mini_docker": "__SET_BY_CONFIG__",
+  "AnnotateVcf.sv_pipeline_docker": "__SET_BY_CONFIG__",
+  "AnnotateVcf.vcf": "__INJECT_VCF__",
+  "AnnotateVcf.prefix": "__INJECT_PREFIX__",
+  "AnnotateVcf.ped_file": "__INJECT_PED_FILE__"
+}
